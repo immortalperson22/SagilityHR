@@ -135,6 +135,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) return { error };
 
+    // For testing: auto-confirm email to avoid rate limiting
+    // In production, remove this block and require email verification
+    if (data.user && !data.session) {
+      // Email confirmation required - this triggers the rate limit
+      // For testing, we can skip this
+      console.log('Signup successful - check email to confirm');
+    }
+
     // Note: Profile creation is now handled by a database trigger 
     // to ensure it works even if email confirmation is required.
 
@@ -153,9 +161,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('SignOut error:', error);
+    }
+    
+    // Clear all state
+    setUser(null);
+    setSession(null);
     setRole(null);
     setProfile(null);
+    
+    // Clear localStorage/sessionStorage
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Force full page reload and redirect
+    window.location.replace('/auth');
   };
 
   return (

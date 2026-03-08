@@ -164,10 +164,10 @@ CREATE TABLE public.submissions (
 
 ```bash
 # Clone the repository
-git clone https://github.com/immortalperson22/hr-hub-pro.git
+git clone https://github.com/immortalperson22/SagilityHR.git
 
 # Navigate to project directory
-cd hr-hub-pro
+cd SagilityHR
 
 # Install dependencies
 npm install
@@ -203,7 +203,7 @@ npm run preview
 ## 📁 Project Structure
 
 ```
-hr-hub-pro/
+SagilityHR/
 ├── src/
 │   ├── components/          # Reusable UI components
 │   │   ├── ui/            # Shadcn/UI components

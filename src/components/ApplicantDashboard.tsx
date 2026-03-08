@@ -10,7 +10,9 @@ import {
   Download,
   X,
   Eye,
-  ExternalLink
+  ExternalLink,
+  Edit2,
+  Save
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
@@ -53,6 +55,8 @@ export default function ApplicantDashboard() {
   const [preEmploymentFile, setPreEmploymentFile] = useState<File | null>(null);
   const [policyFile, setPolicyFile] = useState<File | null>(null);
   const [userFullName, setUserFullName] = useState<string>('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -71,9 +75,35 @@ export default function ApplicantDashboard() {
         .maybeSingle();
       if (data?.full_name) {
         setUserFullName(data.full_name);
+        setEditedName(data.full_name);
+      } else {
+        setEditedName('');
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
+    }
+  };
+
+  const handleSaveName = async () => {
+    if (!user || !editedName.trim()) {
+      toast.error('Please enter your name');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ full_name: editedName.trim() })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setUserFullName(editedName.trim());
+      setIsEditingName(false);
+      toast.success('Name updated successfully!');
+    } catch (error) {
+      console.error('Error updating name:', error);
+      toast.error('Failed to update name');
     }
   };
 
@@ -251,9 +281,38 @@ export default function ApplicantDashboard() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Title */}
-      <div>
-        <h2 className="text-3xl font-heading font-bold text-foreground">Applicant Dashboard</h2>
-        <p className="text-muted-foreground mt-1">Complete your onboarding requirements</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-heading font-bold text-foreground">Applicant Dashboard</h2>
+          <p className="text-muted-foreground mt-1">Complete your onboarding requirements</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {isEditingName ? (
+            <>
+              <Input
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value)}
+                placeholder="Enter your full name"
+                className="w-48"
+              />
+              <Button size="sm" onClick={handleSaveName}>
+                <Save className="w-4 h-4 mr-1" />
+                Save
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setIsEditingName(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" variant="outline" onClick={() => {
+              setEditedName(userFullName);
+              setIsEditingName(true);
+            }}>
+              <Edit2 className="w-4 h-4 mr-1" />
+              Edit Name
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Status Alerts */}

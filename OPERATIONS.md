@@ -20,7 +20,7 @@ pkill -f "code"
 
 ### Run App in Production Mode
 ```bash
-cd /home/JerutaX/Downloads/hr-hub-pro-main
+cd /home/JerutaX/Downloads/SagilityHR-main
 npm run build && npm run preview
 ```
 
@@ -75,6 +75,13 @@ Notes: [Any additional info]
 | 2026-02-26 | Delete Button | Deletes PDFs + User account | Manual admin control |
 | 2026-02-26 | Auto-Delete Function | 45-day cleanup Edge Function | delete-old-records |
 | 2026-02-26 | Team Management | Added Team tab + Invite functionality | Admins can create HR/Admin users |
+| 2026-02-26 | HR Employee Role | Added hr role with view-only access | Cannot approve/reject/delete |
+| 2026-02-26 | Logout Fix | Fixed logout not redirecting | Added window.location.reload |
+| 2026-02-26 | Dashboard Title Fix | Shows HR Employee Dashboard for hr role | Admin Dashboard for admin |
+| 2026-02-26 | Remove Employee Role | Removed employee from Dashboard | Keep only applicant/hr/admin |
+| 2026-02-26 | Delete Unused Tables | Removed document_uploads + submissions | Clean database |
+| 2026-02-26 | Profile Trigger | Added handle_new_user trigger | Auto-create profiles on signup |
+| 2026-02-26 | Edit Name Feature | Added Edit Name button for applicants | Can update full_name |
 
 ---
 
@@ -177,6 +184,31 @@ Notes: [Any additional info]
 - HR Employees can view Pending and Archived tabs but cannot Approve/Reject/Delete
 - Added protection against deleting last admin and self-deletion
 **Result:** ✅ Complete team management with role-based permissions
+
+### Topic 8: Logout & Dashboard Title Fix
+**Issue:** Logout not redirecting to /auth page. Title showed "Admin Dashboard" for HR employees.
+**Actions:**
+- Updated signOut function to use window.location.reload for complete logout
+- Fixed Dashboard title to show "HR Employee Dashboard" for hr role, "Admin Dashboard" for admin
+- Updated Layout to show "HR" badge instead of "employee"
+**Result:** ✅ Logout works, titles now correct
+
+### Topic 9: Remove Employee Role & Cleanup
+**Issue:** Employee role was unused. Legacy tables still in database.
+**Actions:**
+- Removed employee role from Dashboard (kept only applicant/hr/admin)
+- Approved applicants now stay as applicant (can view their submitted docs)
+- Updated types.ts to remove "employee" from enum
+- Deleted unused tables: document_uploads, submissions
+**Result:** ✅ Clean database, only 3 active roles
+
+### Topic 10: Profile Management
+**Issue:** Applicants couldn't update their name. New users needed auto-profile creation.
+**Actions:**
+- Added "Edit Name" button in ApplicantDashboard
+- Created database trigger handle_new_user() for auto-profile creation
+- Created assign_default_role() function for role assignment
+**Result:** ✅ Users can edit name, profiles auto-created on signup
 
 ### Topic 1: Smart Resubmit Logic
 **Issue:** Applicants had to restart from blank templates when a revision was requested.
@@ -302,7 +334,7 @@ Notes: [Any additional info]
 
 ### Always Run First
 ```bash
-cd /home/JerutaX/Downloads/hr-hub-pro-main
+cd /home/JerutaX/Downloads/SagilityHR-main
 ```
 
 ### Production Build (Use This!)
@@ -361,18 +393,18 @@ pkill -f firefox
 
 ### Check Current State
 ```bash
-ls -la /home/JerutaX/Downloads/hr-hub-pro-main/src/pages/
+ls -la /home/JerutaX/Downloads/SagilityHR-main/src/pages/
 ```
 
 ### Auth Pages Location
 ```
-/home/JerutaX/Downloads/hr-hub-pro-main/src/pages/Auth.tsx
-/home/JerutaX/Downloads/hr-hub-pro-main/src/components/auth/
+/home/JerutaX/Downloads/SagilityHR-main/src/pages/Auth.tsx
+/home/JerutaX/Downloads/SagilityHR-main/src/components/auth/
 ```
 
 ### Build Status
 ```bash
-ls -la /home/JerutaX/Downloads/hr-hub-pro-main/dist/
+ls -la /home/JerutaX/Downloads/SagilityHR-main/dist/
 ```
 
 ---
@@ -384,31 +416,43 @@ ls -la /home/JerutaX/Downloads/hr-hub-pro-main/dist/
 ### What's Working:
 - Authentication (Sign In/Sign Up)
 - Password reset flow
-- MFA setup (email-only after Feb 13 changes)
-- Role-based access (Admin/Employee/Applicant)
+- Role-based access (Admin/HR Employee/Applicant) - NO employee role
 - Database schema with RLS policies
-- Password visibility toggle (fixed Feb 13)
+- Password visibility toggle
 - Signup with email confirmation (Supabase)
-- Smart Resubmit for PDFs (Added Feb 23)
-- Storage Overwrite/Upsert (Added Feb 23)
-- Applicant Document Viewer (Added Feb 23)
-- Automated Employee Promotion (Added Feb 19)
-- Real-Time Role Switching & Celebration (Added Feb 24)
-- Admin Review Workflow Polish (Added Feb 24)
-- DevMode State Switcher (Added Feb 24)
-- Email Notifications with "Sagility" branding (Added Feb 26)
-- PDF naming with applicant name (Added Feb 26)
-- Reject button + Archived tab (Added Feb 26)
-- Approval/Rejection tracking (Added Feb 26)
-- Delete button for manual cleanup (Added Feb 26)
-- Auto-delete function for 45-day cleanup (Added Feb 26)
-- **Team Management - invite Admins and HR Employees (Added Feb 26)**
-- **Role-based permissions - HR view-only (Added Feb 26)**
+- Smart Resubmit for PDFs
+- Storage Overwrite/Upsert
+- Applicant Document Viewer
+- Email Notifications with "Sagility" branding
+- PDF naming with applicant name
+- Reject button + Archived tab
+- Approval/Rejection tracking
+- Delete button for manual cleanup
+- Auto-delete function for 45-day cleanup
+- Team Management - invite Admins and HR Employees
+- Role-based permissions - HR view-only
+- Edit Name button for applicants
+- Auto-profile creation on signup
+- Profile trigger handle_new_user()
+
+### Roles (Active):
+| Role | Access |
+|------|--------|
+| Applicant | Submit PDFs, view own status, edit name |
+| HR Employee | View Pending/Archived (read-only) |
+| Admin | Full control + invite users |
+
+### Database Tables (Active):
+| Table | Purpose |
+|-------|---------|
+| profiles | User information |
+| user_roles | Access control |
+| applicants | Job applications & PDFs |
+| applicant-docs (bucket) | PDF file storage |
 
 ### Known Issues:
-- VM crashes when running dev server + Firefox + VS Code simultaneously
-- Solution: Use production build, close heavy apps
-- Supabase email rate limit: ~3-5 emails/hour on free tier
+- Supabase Egress limit exceeded (126%) - Waiting for reset on March 20, 2026
+- Solution: Upgrade to Pro OR wait for billing cycle reset
 
 ---
 
@@ -424,12 +468,29 @@ ls -la /home/JerutaX/Downloads/hr-hub-pro-main/dist/
 
 | Priority | Action | Status | Date |
 |----------|--------|--------|------|
-| High | Test Team tab (invite member) | Pending | 2026-02-26 |
-| High | Test HR employee view-only access | Pending | 2026-02-26 |
-| High | Test last admin deletion protection | Pending | 2026-02-26 |
-| Medium | Set up cron job for auto-delete | Pending | - |
-| Medium | Test production build for stability | Pending | - |
+| High | Test complete workflow (Applicant, HR, Admin) | Pending | After egress resets |
+| High | Deploy to GitHub Pages | Pending | - |
+| Medium | Set up cron job for auto-delete | Optional | - |
+| Medium | Upgrade to Pro if needed for production | Optional | - |
 | Low | Optimize VM settings | Optional | - |
+
+---
+
+## Supabase Free Tier Limits
+
+| Resource | Limit | Current Usage | Status |
+|----------|-------|---------------|--------|
+| Egress | 5 GB/month | 6.31 GB | ⚠️ Exceeded (resets March 20) |
+| Database | 0.5 GB | 26.71 MB | ✅ OK |
+| Storage | 1 GB | <1 MB | ✅ OK |
+| MAU | 50,000 | 3 | ✅ OK |
+
+### Egress Calculation (Normal Use)
+- 30 applicants + 3 staff = ~1.4 GB/month
+- Well within 5 GB limit for normal use
+- Testing caused the excess (nonstop page loads/views)
+
+---
 
 ---
 

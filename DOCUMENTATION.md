@@ -84,17 +84,30 @@ Admin Dashboard Enhancement with Approval/Rejection Tracking and Auto-Delete.
 - Approval tracking columns: approved_at, approved_by, rejected_at, rejected_by
 - Delete button in Admin Dashboard to remove PDF files from storage + user account from Auth
 - Auto-delete Edge Function ("delete-old-records") for removing records older than 45 days
-- **Team tab in Admin Dashboard - invite and manage Admins and HR Employees**
-- **HR Employee role with view-only access (cannot Approve/Reject/Delete)**
-- **Permission controls - action buttons hidden for non-admin users**
-- **Last admin deletion protection**
+- Team tab in Admin Dashboard - invite and manage Admins and HR Employees
+- HR Employee role with view-only access (cannot Approve/Reject/Delete)
+- Permission controls - action buttons hidden for non-admin users
+- Last admin deletion protection
+- Edit Name button for applicants to update their profile
+- Auto-profile creation via database trigger (handle_new_user)
+- Assign default role function (assign_default_role)
+
+**Removed:**
+- Employee role - not used in workflow
+- Unused tables: document_uploads, submissions
 
 **Database Changes:**
 - Added columns to applicants table: approved_at, rejected_at, approved_by, rejected_by
+- Added hr role to app_role enum
+- Dropped unused tables: document_uploads, submissions
 
 **Edge Functions:**
 - send-approval-email: Sends email notification when applicant is approved
 - delete-old-records: Scheduled function to auto-delete records after 45 days
+
+**Database Functions:**
+- handle_new_user(): Trigger to auto-create profiles on signup
+- assign_default_role(): Assigns default 'applicant' role to new users
 
 **Design & UI:**
 - **Improved Workflow**: Removed the "Reject" button to streamline the admin review process. Added a "Smart Resubmit" feature allowing applicants to edit previous PDF versions via Sejda instead of starting over.
@@ -390,28 +403,32 @@ Successfully executed Supabase migration creating:
 
 #### 1. Role Assignment Table
 
-**public.user_roles** - Maps users to roles (admin, employee, applicant)
+**public.user_roles** - Maps users to roles (admin, hr, applicant)
 - Links to `auth.users(id)` for secure authentication integration
 - Uses ENUM type `app_role` for role values
 
-#### 2. Document Uploads Table
+#### 2. Profiles Table
 
-```sql
-CREATE TABLE IF NOT EXISTS public.document_uploads (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id),
-  original_filename TEXT NOT NULL,
-  stored_filename TEXT NOT NULL,
-  storage_path TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
-  rejection_reason TEXT,
-  uploaded_at TIMESTAMPTZ DEFAULT NOW(),
-  reviewed_at TIMESTAMPTZ,
-  reviewed_by UUID REFERENCES auth.users(id)
-);
-```
+**public.profiles** - Stores user information
+- user_id (links to auth.users)
+- full_name
+- phone
+- Auto-created via database trigger on new user signup
 
-#### 3. Row Level Security (RLS) Policies
+#### 3. Applicants Table
+
+**public.applicants** - Main application tracking table
+- Links to profiles via user_id
+- Stores PDF URLs (pre_employment_url, policy_rules_url)
+- Status tracking: pending, revision_required, approved, rejected
+- Approval/rejection tracking with timestamps and admin IDs
+
+#### 4. Storage Bucket
+
+**applicant-docs** - Stores uploaded PDF files
+- Files named with applicant name: JOHN_DOE-pre-employment.pdf
+
+#### 5. Row Level Security (RLS) Policies
 
 **User Policy:**
 Users can only see their own uploads:
@@ -567,9 +584,11 @@ Created seed data for testing:
 
 | Role | Capabilities |
 |------|-------------|
-| Admin | Full system access, user management, submission review |
-| Employee | Personal features, assigned tasks |
-| Applicant | Document submission, status viewing |
+| Admin | Full system access, user management, submission review, invite users, delete records |
+| HR Employee | View Pending/Archived tabs (read-only), cannot approve/reject/delete |
+| Applicant | Document submission, status viewing, edit profile name |
+
+**Note:** The "Employee" role was removed. Approved applicants stay as "applicant" and can view their submitted documents.
 
 ---
 
@@ -661,10 +680,10 @@ Created seed data for testing:
 
 ```bash
 # Clone the repository
-git clone https://github.com/immortalperson22/hr-hub-pro.git
+git clone https://github.com/immortalperson22/SagilityHR.git
 
 # Navigate to project directory
-cd hr-hub-pro
+cd SagilityHR
 
 # Install dependencies
 npm install

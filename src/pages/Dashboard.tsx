@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Layout from '@/components/Layout';
 import ApplicantDashboard from '@/components/ApplicantDashboard';
-import EmployeeDashboard from '@/components/EmployeeDashboard';
 import AdminDashboard from '@/components/AdminDashboard';
 import { toast } from 'sonner';
 import { PartyPopper } from 'lucide-react';
@@ -12,8 +11,8 @@ export default function Dashboard() {
   const prevRole = useRef<string | null>(null);
 
   useEffect(() => {
-    if (prevRole.current === 'applicant' && role === 'employee') {
-      toast.success('Congratulations! Your application has been approved. Welcome to the team!', {
+    if (prevRole.current === 'applicant' && role === 'hr') {
+      toast.success('Congratulations! You are now an HR Employee with access to view applicant records.', {
         icon: <PartyPopper className="w-5 h-5 text-primary" />,
         duration: 8000,
       });
@@ -34,8 +33,7 @@ export default function Dashboard() {
   return (
     <Layout>
       {role === 'applicant' && <ApplicantDashboard />}
-      {role === 'employee' && <EmployeeDashboard />}
-      {role === 'admin' && <AdminDashboard />}
+      {(role === 'admin' || role === 'hr') && <AdminDashboard />}
       {!role && (
         <div className="text-center py-12">
           <p className="text-muted-foreground">No role assigned. Please contact an administrator.</p>

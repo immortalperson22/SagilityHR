@@ -28,14 +28,14 @@ export default function Layout({ children }: LayoutProps) {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/auth');
+    // Note: signOut now handles redirect via window.location.replace
   };
 
   const getRoleIcon = () => {
     switch (role) {
       case 'admin':
         return <Shield className="w-4 h-4" />;
-      case 'employee':
+      case 'hr':
         return <Briefcase className="w-4 h-4" />;
       default:
         return <User className="w-4 h-4" />;
@@ -46,7 +46,7 @@ export default function Layout({ children }: LayoutProps) {
     switch (role) {
       case 'admin':
         return 'bg-destructive/10 text-destructive border-destructive/20';
-      case 'employee':
+      case 'hr':
         return 'bg-primary/10 text-primary border-primary/20';
       default:
         return 'bg-warning/10 text-warning border-warning/20';
@@ -70,7 +70,7 @@ export default function Layout({ children }: LayoutProps) {
             {role && (
               <span className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getRoleBadgeClass()}`}>
                 {getRoleIcon()}
-                {role}
+                {role === 'hr' ? 'HR' : role}
               </span>
             )}
           </div>

@@ -78,29 +78,43 @@ export default function AdminDashboard() {
 
   const fetchTeamMembers = async () => {
     try {
-      const { data, error: fetchError } = await supabase
+      // Fetch user_roles for admin and hr
+      const { data: rolesData, error: fetchError } = await supabase
         .from('user_roles')
-        .select(`
-          user_id,
-          role,
-          created_at,
-          profiles!inner(email, full_name)
-        `)
+        .select('user_id, role, created_at')
         .in('role', ['admin', 'hr'])
         .order('created_at', { ascending: false });
 
       if (fetchError) {
         console.error('Error fetching team members:', fetchError);
-      } else {
-        const formatted = (data || []).map((item: any) => ({
+        return;
+      }
+
+      // Fetch profiles for all team members
+      const userIds = (rolesData || []).map((r: any) => r.user_id);
+      let profilesData: any[] = [];
+      
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, email, full_name')
+          .in('user_id', userIds);
+        profilesData = profiles || [];
+      }
+
+      // Merge role data with profile data
+      const formatted = (rolesData || []).map((item: any) => {
+        const profile = profilesData.find(p => p.user_id === item.user_id);
+        return {
           user_id: item.user_id,
           role: item.role,
-          email: item.profiles?.email || 'No email',
-          full_name: item.profiles?.full_name || 'Unknown',
+          email: profile?.email || 'No email',
+          full_name: profile?.full_name || 'Unknown',
           created_at: item.created_at
-        }));
-        setTeamMembers(formatted);
-      }
+        };
+      });
+
+      setTeamMembers(formatted);
     } catch (err) {
       console.error('Error:', err);
     }
@@ -108,25 +122,48 @@ export default function AdminDashboard() {
 
   const fetchApplicants = async () => {
     try {
-      const { data, error: fetchError } = await supabase
+      // Fetch applicants
+      const { data: applicantsData, error: fetchError } = await supabase
         .from('applicants' as any)
-        .select(`
-          *,
-          profiles (
-            full_name
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (fetchError) {
         console.error('Error fetching applicants:', fetchError);
         setError(fetchError.message);
-      } else {
-        setApplicants((data as unknown as Applicant[]) || []);
-        setError(null);
+        setApplicants([]);
+        setLoading(false);
+        return;
       }
+
+      // Fetch profiles for all applicant user_ids
+      const userIds = (applicantsData || []).map((a: any) => a.user_id);
+      let profilesData: any[] = [];
+      
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .in('user_id', userIds);
+        profilesData = profiles || [];
+      }
+
+      // Merge applicant data with profile names
+      const merged = (applicantsData || []).map((applicant: any) => {
+        const profile = profilesData.find(p => p.user_id === applicant.user_id);
+        return {
+          ...applicant,
+          profiles: {
+            full_name: profile?.full_name || null
+          }
+        };
+      });
+
+      setApplicants(merged as Applicant[]);
+      setError(null);
     } catch (err: any) {
       setError(err.message);
+      setApplicants([]);
     } finally {
       setLoading(false);
     }
@@ -174,18 +211,10 @@ export default function AdminDashboard() {
 
       if (appError) throw appError;
 
-      if (status === 'approved') {
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .update({ role: 'employee' })
-          .eq('user_id', selectedApplicant.user_id);
+      // NOTE: Approved applicants stay as "applicant" role
+      // They can still log in to view their submitted documents
 
-        if (roleError) {
-          console.error('Error promoting user:', roleError);
-        }
-      }
-
-      toast.success(status === 'approved' ? 'Applicant approved and promoted to employee!' : status === 'rejected' ? 'Applicant rejected.' : 'Revision request sent to applicant.');
+      toast.success(status === 'approved' ? 'Applicant approved!' : status === 'rejected' ? 'Applicant rejected.' : 'Revision request sent to applicant.');
 
       if (status === 'approved') {
         setSelectedApplicant(null);
@@ -359,8 +388,12 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div>
-        <h2 className="text-3xl font-heading font-bold text-foreground">Admin Dashboard</h2>
-        <p className="text-muted-foreground mt-1">Review and manage onboarding applications</p>
+        <h2 className="text-3xl font-heading font-bold text-foreground">
+          {isAdmin ? 'Admin Dashboard' : 'HR Employee Dashboard'}
+        </h2>
+        <p className="text-muted-foreground mt-1">
+          {isAdmin ? 'Review and manage onboarding applications' : 'View and review applicant documents'}
+        </p>
       </div>
 
       {error && (

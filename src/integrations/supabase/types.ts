@@ -15,45 +15,6 @@ export type Database = {
   public: {
     Tables: {
 
-      document_uploads: {
-        Row: {
-          id: string
-          original_filename: string
-          rejection_reason: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          status: string
-          storage_path: string
-          stored_filename: string
-          uploaded_at: string
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          original_filename: string
-          rejection_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-          storage_path: string
-          stored_filename: string
-          uploaded_at?: string
-          user_id: string
-        }
-        Update: {
-          id?: string
-          original_filename?: string
-          rejection_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-          storage_path?: string
-          stored_filename?: string
-          uploaded_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           created_at: string
@@ -118,7 +79,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "applicant" | "employee" | "admin"
+      app_role: "applicant" | "admin" | "hr"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -246,7 +207,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["applicant", "employee", "admin"],
+      app_role: ["applicant", "admin", "hr"],
     },
   },
 } as const
