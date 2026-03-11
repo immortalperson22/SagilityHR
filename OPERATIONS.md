@@ -82,6 +82,10 @@ Notes: [Any additional info]
 | 2026-02-26 | Delete Unused Tables | Removed document_uploads + submissions | Clean database |
 | 2026-02-26 | Profile Trigger | Added handle_new_user trigger | Auto-create profiles on signup |
 | 2026-02-26 | Edit Name Feature | Added Edit Name button for applicants | Can update full_name |
+| 2026-03-11 | Fix Lint Issues | Added search_path to 3 DB functions | Security fix |
+| 2026-03-11 | Supabase Project | Project NOT deleted - still exists | gvhiemfhscdepjrscfyw |
+| 2026-03-11 | Repository Rename | Renamed to SagilityHR | hr-hub-pro → SagilityHR |
+| 2026-03-11 | Leaked Password | Skipped - requires Pro plan | Free tier limitation |
 
 ---
 
@@ -411,7 +415,7 @@ ls -la /home/JerutaX/Downloads/SagilityHR-main/dist/
 
 ## Current Project Status
 
-**Last Updated:** 2026-02-26
+**Last Updated:** 2026-03-11
 
 ### What's Working:
 - Authentication (Sign In/Sign Up)
@@ -433,6 +437,11 @@ ls -la /home/JerutaX/Downloads/SagilityHR-main/dist/
 - Role-based permissions - HR view-only
 - Edit Name button for applicants
 - Auto-profile creation on signup
+- **Database function security fixes (search_path) - Applied March 11**
+
+### Known Issues:
+- Supabase Egress limit - Need to monitor usage
+- Leaked Password Protection - Requires Pro plan (skipped)
 - Profile trigger handle_new_user()
 
 ### Roles (Active):
