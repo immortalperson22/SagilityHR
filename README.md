@@ -4,6 +4,10 @@
 
 ---
 
+## Live Demo
+
+🌐 **Live URL**: https://immortalperson22.github.io/SagilityHR
+
 ## 📋 Project Overview
 
 Sagility is an employee management platform designed to streamline HR operations. This project demonstrates full-stack development skills including secure authentication, role-based access control, document management, and responsive UI design.
