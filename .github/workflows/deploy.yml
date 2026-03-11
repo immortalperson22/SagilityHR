@@ -5,45 +5,34 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: 'write'
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          
-      - name: Install dependencies
+
+      - name: Install
         run: npm install
-        
+
       - name: Build
         run: npm run build
-        
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist
-          
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Deploy
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git clone --depth 1 --branch gh-pages https://github.com/immortalperson22/SagilityHR.git gh-pages-repo || git clone --depth 1 https://github.com/immortalperson22/SagilityHR.git gh-pages-repo
+          cd gh-pages-repo
+          rm -rf .
+          cp -r ../dist/* .
+          git add .
+          git commit -m "Deploy $(git rev-parse --short HEAD)"
+          git push origin gh-pages
