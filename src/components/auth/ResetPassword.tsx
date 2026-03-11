@@ -58,7 +58,7 @@ export default function ResetPassword() {
       localStorage.removeItem('resettingPassword');
       setSuccess(true);
       setTimeout(() => {
-        window.location.href = 'http://localhost:8080/auth';
+        window.location.href = window.location.origin + '/auth';
       }, 1500);
     }
   };

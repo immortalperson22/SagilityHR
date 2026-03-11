@@ -62,11 +62,13 @@ serve(async (req) => {
     const smtpPort = parseInt(Deno.env.get('SMTP_PORT') || '587');
     const smtpUser = Deno.env.get('SMTP_USER');
     const smtpPass = Deno.env.get('SMTP_PASS');
-    const testRecipient = "delosreyesjp28@gmail.com"; // Fixed test email per user request
 
     if (!smtpUser || !smtpPass) {
       throw new Error("SMTP_USER or SMTP_PASS secrets are not configured.");
     }
+
+    // Send to actual applicant email
+    const recipient = applicantEmail;
 
     // 3. Create Transporter (Nodemailer)
     const transporter = nodemailer.createTransport({
@@ -101,12 +103,12 @@ serve(async (req) => {
       </div>
     `;
 
-    console.log(`Sending email to ${testRecipient}...`);
+    console.log(`Sending email to ${recipient}...`);
 
     // 4. Send the email
     await transporter.sendMail({
       from: `"Sagility" <${smtpUser}>`,
-      to: testRecipient,
+      to: recipient,
       subject: subject,
       html: htmlContent,
     });

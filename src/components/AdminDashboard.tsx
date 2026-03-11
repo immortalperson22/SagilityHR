@@ -294,7 +294,11 @@ export default function AdminDashboard() {
 
     setInviting(true);
     try {
-      const tempPassword = 'Welcome' + Math.random().toString(36).slice(-8) + '!';
+      // Generate cryptographically secure temporary password
+      const array = new Uint8Array(16);
+      crypto.getRandomValues(array);
+      const randomPart = Array.from(array, b => b.toString(36).padStart(2, '0')).join('').slice(0, 12);
+      const tempPassword = 'Welc@' + randomPart;
       
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: inviteEmail,
