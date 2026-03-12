@@ -318,8 +318,7 @@ export default function Auth() {
           >
             Don't have an account? Sign Up
           </button>
-          )}
-        </div>
+        )}
       </div>
     );
   }
