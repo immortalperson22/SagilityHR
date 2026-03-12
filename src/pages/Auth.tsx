@@ -318,21 +318,9 @@ export default function Auth() {
           >
             Don't have an account? Sign Up
           </button>
-        )}
-        <a href="/dev-mode" className="text-xs text-muted-foreground underline block w-full">
-          Preview Design (1.png)
-        </a>
+          )}
+        </div>
       </div>
-
-      {/* Desktop Design Preview Link */}
-      <div className="hidden md:block fixed bottom-4 left-4 z-50">
-        <a
-          href="/dev-mode"
-          className="px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-full text-xs font-medium backdrop-blur-sm hover:bg-primary/20 transition-all"
-        >
-          Preview Design Sample
-        </a>
-      </div>
-    </div>
-  );
+    );
+  }
 }
