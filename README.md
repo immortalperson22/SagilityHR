@@ -6,7 +6,7 @@
 
 ## Live Demo
 
-🌐 **Live URL**: https://immortalperson22.github.io/SagilityHR
+🌐 **Live URL**: https://v0-sagility.vercel.app
 
 ## 📋 Project Overview
 
