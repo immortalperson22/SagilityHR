@@ -32,15 +32,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchUserRole = async (userId: string) => {
-    const { data, error } = await supabase
+    const { data: roleData, error: roleError } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (data && !error) {
-      setRole(data.role as AppRole);
+    console.log("🕵️ Fetching role for:", userId, "Result:", { data: roleData, error: roleError });
+    
+    if (roleError) {
+      console.error("❌ Role fetch error:", roleError);
+      setRole(null);
+    } else if (roleData) {
+      setRole(roleData.role as AppRole);
     } else {
+      console.warn("⚠️ No role record found for this user.");
       setRole(null);
     }
   };
