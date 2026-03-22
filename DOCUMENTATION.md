@@ -93,7 +93,7 @@ Admin Dashboard Enhancement with Approval/Rejection Tracking and Auto-Delete.
 - Assign default role function (assign_default_role)
 
 **Removed:**
-- Employee role - not used in workflow
+- HR role ('hr') - used for HR Employees (Spectators who can view but not approve)
 - Unused tables: document_uploads, submissions
 
 **Database Changes:**

@@ -61,14 +61,14 @@ export default function AdminDashboard() {
   const [inviteSuccess, setInviteSuccess] = useState(false);
 
   const isAdmin = currentUserRole === 'admin';
-  const isHR = currentUserRole === 'hr' || currentUserRole === 'employee';
+  const isHR = currentUserRole === 'hr';
 
   const pendingApplicants = applicants.filter(a => a.status === 'pending' || a.status === 'revision_required');
   const archivedApplicants = applicants.filter(a => a.status === 'approved' || a.status === 'rejected');
   const displayedApplicants = activeTab === 'pending' ? pendingApplicants : archivedApplicants;
 
   useEffect(() => {
-    if (user && (currentUserRole === 'admin' || currentUserRole === 'hr' || currentUserRole === 'employee')) {
+    if (user && (currentUserRole === 'admin' || currentUserRole === 'hr')) {
       fetchApplicants();
       if (currentUserRole === 'admin') {
         fetchTeamMembers();
@@ -269,7 +269,7 @@ export default function AdminDashboard() {
       await supabase.from('profiles').delete().eq('user_id', selectedApplicant.user_id);
 
       const { error: deleteError } = await supabase
-        .from('applicants')
+        .from('applicants' as any)
         .delete()
         .eq('id', selectedApplicant.id);
 
