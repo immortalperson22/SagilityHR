@@ -14,7 +14,7 @@ Sagility is an employee management platform designed to streamline HR operations
 
 ### Key Features
 
-- 🔐 **Secure Authentication** - Multi-factor authentication (MFA/TOTP), password strength enforcement
+- 🔐 **Secure Authentication** - Multi-factor authentication (MFA) with Email OTP, password strength enforcement
 - 👥 **Role-Based Access** - Admin, Employee, and Applicant roles with different permissions
 - 📄 **Document Management** - PDF upload and submission workflow
 - 🌙 **Dark Mode Support** - Full dark mode toggle
@@ -79,7 +79,7 @@ The authentication system was built from scratch with manual implementation of:
 - ✅ **Password Visibility Toggle** - Eye icons for showing/hiding passwords
 - ✅ **Automatic Field Clearing** - Fields reset when switching between forms
 - ✅ **Password Strength Validation** - Enforces strong passwords (8+ chars, uppercase, lowercase, numbers, special characters)
-- ✅ **Multi-Factor Authentication** - TOTP-based MFA using authenticator apps
+- ✅ **Multi-Factor Authentication** - Email OTP-based MFA for enhanced security
 - ✅ **Role-Based Redirect** - Different dashboards based on user role
 
 **Code Example - Password Toggle Implementation:**
@@ -114,14 +114,14 @@ Three distinct roles with different access levels:
 
 **Row Level Security (RLS) Policies:**
 ```sql
--- Applicants can only see their own submissions
-CREATE POLICY "applicant sees own submissions"
-ON public.submissions FOR SELECT
+-- Applicants can only see their own applications
+CREATE POLICY "applicant sees own applications"
+ON public.applicants FOR SELECT
 USING (auth.uid() = user_id);
 
--- Admins can view and edit all submissions
-CREATE POLICY "admin sees all submissions"
-ON public.submissions FOR ALL
+-- Admins can view and edit all applications
+CREATE POLICY "admin sees all applications"
+ON public.applicants FOR ALL
 USING (
   EXISTS (
     SELECT 1 FROM public.user_roles 
@@ -141,14 +141,25 @@ CREATE TABLE public.user_roles (
   UNIQUE(user_id, role)
 );
 
--- Submissions Table
-CREATE TABLE public.submissions (
+-- Applicants Table
+CREATE TABLE public.applicants (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id),
-  salary_pdf TEXT,
-  policy_pdf TEXT,
+  pre_employment_url TEXT,
+  policy_rules_url TEXT,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
-  admin_comment TEXT,
+  rejection_reason TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Profiles Table
+CREATE TABLE public.profiles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id),
+  full_name TEXT NOT NULL,
+  phone TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 ```
@@ -278,27 +289,27 @@ The application is fully responsive and works on:
 
 ### Authentication Testing
 
-- [ ] User registration with all required fields
-- [ ] Password strength validation
-- [ ] Password visibility toggle
-- [ ] Form field clearing on tab switch
-- [ ] MFA setup and verification
-- [ ] Role-based redirect
+- [x] User registration with all required fields
+- [x] Password strength validation
+- [x] Password visibility toggle
+- [x] Form field clearing on tab switch
+- [x] Email/password authentication
+- [x] Role-based redirect
 
 ### Database Testing
 
-- [ ] User role assignment
-- [ ] RLS policy enforcement
-- [ ] Submission creation and retrieval
-- [ ] Status workflow (pending → approved/rejected)
+- [x] User role assignment
+- [x] RLS policy enforcement
+- [x] Application creation and retrieval
+- [x] Status workflow (pending → approved/rejected)
 
 ### UI/UX Testing
 
-- [ ] Dark mode toggle
-- [ ] Responsive layout
-- [ ] Form validation
-- [ ] Error message display
-- [ ] Loading states
+- [x] Dark mode toggle
+- [x] Responsive layout
+- [x] Form validation
+- [x] Error message display
+- [x] Loading states
 
 ---
 
@@ -331,10 +342,9 @@ This capstone project demonstrates:
 
 ## 👤 Author
 
-**Your Name**
+**JerutaX**
 
 - GitHub: [@immortalperson22](https://github.com/immortalperson22)
-- Email: your-email@example.com
 
 ---
 
@@ -357,11 +367,8 @@ This project is licensed for educational purposes as a capstone project.
 
 For questions or collaboration opportunities, please reach out:
 
-- Email: your-email@example.com
 - GitHub: [@immortalperson22](https://github.com/immortalperson22)
 
 ---
-
-**Note:** This project was developed manually as a capstone submission. All code, documentation, and implementation were created through careful planning, coding, and testing. No AI tools were used in the development process.
 
 *Built with ❤️ as a capstone project*

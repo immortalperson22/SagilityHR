@@ -333,6 +333,19 @@
     color: #fff;
   }
 
+  /* Hide browser's native password toggle buttons */
+  input[type="password"]::-webkit-eye-icon,
+  input[type="password"]::-webkit-caps-lock-indicator,
+  input[type="password"]::-webkit-reveal-icon,
+  input[type="password"]::-webkit-credentials-auto-fill-button {
+    display: none !important;
+  }
+
+  input[type="password"]::-ms-reveal,
+  input[type="password"]::-ms-clear {
+    display: none !important;
+  }
+
   .form-container {
     position: absolute;
     top: 0;
