@@ -333,17 +333,19 @@
     color: #fff;
   }
 
-  /* Hide browser's native password toggle buttons */
-  input[type="password"]::-webkit-eye-icon,
-  input[type="password"]::-webkit-caps-lock-indicator,
-  input[type="password"]::-webkit-reveal-icon,
-  input[type="password"]::-webkit-credentials-auto-fill-button {
-    display: none !important;
-  }
-
+  /* Hide all browser-native password utility icons (reveal, clear, caps lock, auto-fill) */
   input[type="password"]::-ms-reveal,
-  input[type="password"]::-ms-clear {
+  input[type="password"]::-ms-clear,
+  input[type="password"]::-webkit-reveal-icon,
+  input[type="password"]::-webkit-clear-button,
+  input[type="password"]::-webkit-inner-spin-button,
+  input[type="password"]::-webkit-outer-spin-button,
+  input[type="password"]::-webkit-credentials-auto-fill-button,
+  input[type="password"]::-webkit-caps-lock-indicator {
     display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    appearance: none !important;
   }
 
   .form-container {

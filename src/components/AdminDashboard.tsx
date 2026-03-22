@@ -93,7 +93,7 @@ export default function AdminDashboard() {
       // Fetch profiles for all team members
       const userIds = (rolesData || []).map((r: any) => r.user_id);
       let profilesData: any[] = [];
-      
+
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
@@ -139,7 +139,7 @@ export default function AdminDashboard() {
       // Fetch profiles for all applicant user_ids
       const userIds = (applicantsData || []).map((a: any) => a.user_id);
       let profilesData: any[] = [];
-      
+
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
@@ -241,7 +241,7 @@ export default function AdminDashboard() {
 
   const handleDelete = async () => {
     if (!selectedApplicant || !user) return;
-    
+
     const confirmDelete = window.confirm('Are you sure you want to delete this applicant? This will delete the PDF files and user account.');
     if (!confirmDelete) return;
 
@@ -299,7 +299,7 @@ export default function AdminDashboard() {
       crypto.getRandomValues(array);
       const randomPart = Array.from(array, b => b.toString(36).padStart(2, '0')).join('').slice(0, 12);
       const tempPassword = 'Welc@' + randomPart;
-      
+
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: inviteEmail,
         password: tempPassword,
@@ -325,7 +325,7 @@ export default function AdminDashboard() {
         toast.success(`Invited ${inviteName} as ${inviteRole === 'admin' ? 'Admin' : 'HR Employee'}!`);
         setInviteSuccess(true);
         fetchTeamMembers();
-        
+
         setTimeout(() => {
           setShowInviteModal(false);
           setInviteEmail('');
@@ -344,7 +344,7 @@ export default function AdminDashboard() {
 
   const handleDeleteTeamMember = async (member: TeamMember) => {
     if (!isAdmin) return;
-    
+
     if (member.user_id === user?.id) {
       toast.error('You cannot delete your own account');
       return;
@@ -410,32 +410,29 @@ export default function AdminDashboard() {
       <div className="flex gap-2 border-b border-border pb-2">
         <button
           onClick={() => setActiveTab('pending')}
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${
-            activeTab === 'pending'
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === 'pending'
               ? 'bg-primary text-primary-foreground'
               : 'text-muted-foreground hover:bg-muted'
-          }`}
+            }`}
         >
           Pending ({pendingApplicants.length})
         </button>
         <button
           onClick={() => setActiveTab('archived')}
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${
-            activeTab === 'archived'
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === 'archived'
               ? 'bg-primary text-primary-foreground'
               : 'text-muted-foreground hover:bg-muted'
-          }`}
+            }`}
         >
           Archived ({archivedApplicants.length})
         </button>
         {isAdmin && (
           <button
             onClick={() => setActiveTab('team')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              activeTab === 'team'
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === 'team'
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:bg-muted'
-            }`}
+              }`}
           >
             <Users className="w-4 h-4 inline mr-1" />
             Team ({teamMembers.length})
@@ -715,7 +712,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="bg-muted/50 p-3 rounded-lg">
                     <p className="text-xs text-muted-foreground">
-                      <strong>Note:</strong> A new account will be created with a temporary password. 
+                      <strong>Note:</strong> A new account will be created with a temporary password.
                       The invitee should change their password after first login.
                     </p>
                   </div>

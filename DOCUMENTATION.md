@@ -1,8 +1,8 @@
 # Sagility - Development Documentation
 
 **Project:** Sagility - Employee Management Platform
-**Date:** February 26, 2026
-**Version:** 1.7
+**Date:** March 22, 2026
+**Version:** 1.8
 
 ---
 
@@ -123,10 +123,19 @@ Admin Dashboard Enhancement with Approval/Rejection Tracking and Auto-Delete.
 - **RLS Fixes**: Resolved infinite recursion in `user_roles` policies and established the missing relationship between `applicants` and `profiles` in the schema cache.
 - **Role Promotion**: Finalized the logic for promoting approved applicants to employees automatically.
 
-**Bug Fixes:**
-- Resolved "Split System" issue where users were landing on legacy designs.
-- Fixed Admin visibility issues where the dashboard appeared empty despite data existence.
-- Corrected schema relationship errors that prevented applicant data from being queried.
+### Version 1.8 (March 22, 2026)
+UI Refinement & Egress Optimization.
+
+**Fixed:**
+- Redundant password toggle icons in Microsoft Edge and Chromium browsers (CSS reset).
+- Corrected Deno environment types in `supabase/functions` for improved IDE support.
+
+**Added:**
+- Frontend-triggered approval emails: The `AdminDashboard` now invokes the `send-approval-email` function directly upon approval.
+
+**Removed:**
+- Database-level HTTP trigger for approval emails (avoiding direct DB egress).
+- Removed `extensions.http` dependency from the approval workflow.
 
 ---
 
