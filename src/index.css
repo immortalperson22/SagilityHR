@@ -1,8 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -108,7 +108,12 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-heading font-semibold tracking-tight;
   }
 }
@@ -117,11 +122,11 @@
   .status-pending {
     @apply bg-warning/10 text-warning border-warning/20;
   }
-  
+
   .status-approved {
     @apply bg-success/10 text-success border-success/20;
   }
-  
+
   .status-rejected {
     @apply bg-destructive/10 text-destructive border-destructive/20;
   }
@@ -158,19 +163,19 @@
   }
 
   .auth-container p {
-    font-size: 14px;
-    line-height: 20px;
+    font-size: 16px;
+    line-height: 22px;
     letter-spacing: 0.3px;
     margin: 20px 0;
   }
 
   .auth-container span {
-    font-size: 12px;
+    font-size: 14px;
   }
 
   .auth-container a {
     color: #333;
-    font-size: 13px;
+    font-size: 15px;
     text-decoration: none;
     margin: 15px 0 10px;
   }
@@ -182,8 +187,8 @@
   .auth-container button {
     background-color: #0ABAB5;
     color: #fff;
-    font-size: 12px;
-    padding: 10px 45px;
+    font-size: 14px;
+    padding: 12px 48px;
     border: 1px solid transparent;
     border-radius: 8px;
     font-weight: 600;
@@ -205,7 +210,25 @@
 
   .auth-container button.hidden-btn {
     background-color: transparent;
-    border-color: #fff;
+    border: 2px solid #fff;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 35px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .auth-container button.hidden-btn:hover {
+    background-color: #fff;
+    color: #0ABAB5;
+  }
+
+  .forgot-password-link {
+    font-size: 15px !important;
   }
 
   .auth-container form {
@@ -224,22 +247,37 @@
 
   .auth-container form h1 {
     color: hsl(220 30% 15%);
+    font-size: 26px;
   }
 
   .dark .auth-container form h1 {
     color: hsl(210 20% 95%);
+    font-size: 26px;
   }
 
   .auth-container input {
     background-color: #eee;
     border: none;
     margin: 8px 0;
-    padding: 10px 15px;
-    font-size: 13px;
-    border-radius: 8px;
-    width: 100%;
+    padding: 12px 15px;
+    font-size: 15px;
     outline: none;
+    width: 100%;
     color: #333;
+    border-radius: 4px;
+  }
+
+  .auth-container input::placeholder {
+    color: #999;
+  }
+
+  .dark .auth-container input {
+    background-color: hsl(220 25% 18%);
+    color: #fff;
+  }
+
+  .dark .auth-container input::placeholder {
+    color: hsl(220 10% 60%);
   }
 
   .dark .auth-container input {
@@ -253,6 +291,61 @@
 
   .dark .auth-container input::placeholder {
     color: hsl(210 15% 50%);
+  }
+
+  /* Password Toggle Styling */
+  .auth-container .password-input-container {
+    position: relative;
+    width: 100%;
+  }
+
+  .auth-container .password-input-container input {
+    padding-right: 40px;
+  }
+
+  .auth-container .password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 30%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    transition: color 0.2s;
+  }
+
+  .auth-container .password-toggle:hover {
+    color: #333;
+  }
+
+  .dark .auth-container .password-toggle {
+    color: #999;
+  }
+
+  .dark .auth-container .password-toggle:hover {
+    color: #fff;
+  }
+
+  /* Hide all browser-native password utility icons (reveal, clear, caps lock, auto-fill) */
+  input[type="password"]::-ms-reveal,
+  input[type="password"]::-ms-clear,
+  input[type="password"]::-webkit-reveal-icon,
+  input[type="password"]::-webkit-clear-button,
+  input[type="password"]::-webkit-inner-spin-button,
+  input[type="password"]::-webkit-outer-spin-button,
+  input[type="password"]::-webkit-credentials-auto-fill-button,
+  input[type="password"]::-webkit-caps-lock-indicator {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    appearance: none !important;
   }
 
   .form-container {
@@ -287,11 +380,15 @@
   }
 
   @keyframes authMove {
-    0%, 49.99% {
+
+    0%,
+    49.99% {
       opacity: 0;
       z-index: 1;
     }
-    50%, 100% {
+
+    50%,
+    100% {
       opacity: 1;
       z-index: 5;
     }
@@ -350,6 +447,12 @@
 
   .toggle-panel h1 {
     color: #fff !important;
+    font-size: 26px;
+  }
+
+  .toggle-panel p {
+    color: #fff !important;
+    font-size: 16px;
   }
 
   .toggle-left {
@@ -379,7 +482,8 @@
       display: none;
     }
 
-    .sign-in, .sign-up {
+    .sign-in,
+    .sign-up {
       width: 100%;
       position: relative;
     }
@@ -401,5 +505,75 @@
     .auth-container form {
       padding: 40px;
     }
+  }
+
+  /* Password Strength Indicator */
+  .password-strength {
+    width: 100%;
+    margin: 8px 0;
+  }
+
+  .dark .password-strength {
+    background-color: transparent;
+  }
+
+  .strength-bar {
+    height: 4px;
+    background-color: #eee;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .strength-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease, background-color 0.3s ease;
+  }
+
+  .strength-fill.strength-0,
+  .strength-fill.strength-1 {
+    background-color: #ef4444;
+  }
+
+  .strength-fill.strength-2 {
+    background-color: #f97316;
+  }
+
+  .strength-fill.strength-3 {
+    background-color: #eab308;
+  }
+
+  .strength-fill.strength-4 {
+    background-color: #84cc16;
+  }
+
+  .strength-fill.strength-5 {
+    background-color: #22c55e;
+  }
+
+  .strength-text {
+    font-size: 11px;
+    color: #888;
+    margin-top: 4px;
+    display: block;
+  }
+
+  .dark .strength-text {
+    color: #fff;
+  }
+
+  .dark .strength-bar {
+    background-color: hsl(220 20% 35%);
+  }
+
+  .password-error {
+    color: #ef4444;
+    font-size: 11px;
+    margin: 4px 0;
+    width: 100%;
+  }
+
+  .dark .password-error {
+    color: #f87171;
   }
 }

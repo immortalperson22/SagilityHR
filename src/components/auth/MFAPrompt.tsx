@@ -4,8 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Mail, Phone, Volume2 } from 'lucide-react';
-import { sendSMSOTP, sendEmailOTP, sendVoiceOTP, generateOTP } from '@/lib/mfa';
+import { Shield, Mail } from 'lucide-react';
+import { sendEmailOTP, generateOTP } from '@/lib/mfa';
 
 interface MFAPromptProps {
   onSuccess: () => void;
@@ -15,53 +15,25 @@ interface MFAPromptProps {
 export default function MFAPrompt({ onSuccess, onCancel }: MFAPromptProps) {
   const [otpCode, setOtpCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
-  const [currentMethod, setCurrentMethod] = useState<'email' | 'sms' | 'voice'>('email');
   const [expectedCode, setExpectedCode] = useState('');
 
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
 
-  const handleSendCode = async (method: 'email' | 'sms' | 'voice') => {
+  const handleSendCode = async () => {
     if (!user) return;
 
     setIsVerifying(true);
     const code = generateOTP();
     setExpectedCode(code);
-    setCurrentMethod(method);
 
     try {
-      let success = false;
-
-      if (method === 'email') {
-        success = await sendEmailOTP(user.email || '', code);
-      } else if (method === 'sms') {
-        if (!profile?.phone) {
-          toast({
-            title: 'Phone required',
-            description: 'No phone number found. Please contact admin.',
-            variant: 'destructive',
-          });
-          setIsVerifying(false);
-          return;
-        }
-        success = await sendSMSOTP(profile.phone, code);
-      } else if (method === 'voice') {
-        if (!profile?.phone) {
-          toast({
-            title: 'Phone required',
-            description: 'No phone number found. Please contact admin.',
-            variant: 'destructive',
-          });
-          setIsVerifying(false);
-          return;
-        }
-        success = await sendVoiceOTP(profile.phone, code);
-      }
+      const success = await sendEmailOTP(user.email || '', code);
 
       if (success) {
         toast({
           title: 'Code sent!',
-          description: `Check your ${method === 'email' ? 'email' : method === 'sms' ? 'phone (SMS)' : 'phone (voice call)'}.`,
+          description: 'Check your email for the verification code.',
         });
       }
     } catch (error) {
@@ -118,40 +90,18 @@ export default function MFAPrompt({ onSuccess, onCancel }: MFAPromptProps) {
         </div>
 
         <div className="space-y-2">
-          <Label>Didn't receive the code? Try:</Label>
+          <Label>Didn't receive the code?</Label>
           <div className="flex gap-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => handleSendCode('email')}
+              onClick={handleSendCode}
               disabled={isVerifying}
               className="flex items-center gap-1"
             >
               <Mail className="w-3 h-3" />
-              Email
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => handleSendCode('sms')}
-              disabled={isVerifying}
-              className="flex items-center gap-1"
-            >
-              <Phone className="w-3 h-3" />
-              SMS
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => handleSendCode('voice')}
-              disabled={isVerifying}
-              className="flex items-center gap-1"
-            >
-              <Volume2 className="w-3 h-3" />
-              Voice
+              Resend Email
             </Button>
           </div>
         </div>

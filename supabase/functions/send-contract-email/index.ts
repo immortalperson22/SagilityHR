@@ -19,7 +19,7 @@ serve(async (req) => {
     
     // Email sending would go here with Resend API
     // For now, we log the approval
-    console.log(`Document ${filename} approved - would email to hr@company.com`);
+    console.log(`Document ${filename} approved - would email to support@sagility.com`);
 
     return new Response(
       JSON.stringify({ success: true, message: "Document approved" }),

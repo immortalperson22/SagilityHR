@@ -32,21 +32,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchUserRole = async (userId: string) => {
-    console.log('Fetching role for userId:', userId);
     const { data, error } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
       .maybeSingle();
 
-    console.log('Role fetch result:', { data, error });
-    console.log('All user_roles:', await supabase.from('user_roles').select('*'));
     if (data && !error) {
       setRole(data.role as AppRole);
-      console.log('Role set to:', data.role);
     } else {
       setRole(null);
-      console.log('Role set to null, error:', error);
     }
   };
 
@@ -56,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('*')
       .eq('user_id', userId)
       .maybeSingle();
-    
+
     if (data && !error) {
       setProfile(data as Profile);
     } else {
@@ -69,9 +64,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
-          console.log('Logged in user ID:', session.user.id);
           setTimeout(() => {
             fetchUserRole(session.user.id);
             fetchProfile(session.user.id);
@@ -94,8 +88,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    // Real-time listener for role changes
+    const roleChannel = supabase
+      .channel('public:user_roles')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_roles',
+          filter: user ? `user_id=eq.${user.id}` : undefined
+        },
+        (payload) => {
+          if (payload.new && (payload.new as any).role) {
+            setRole((payload.new as any).role as AppRole);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+      supabase.removeChannel(roleChannel);
+    };
+  }, [user]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -103,39 +119,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string, phone?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
+    const redirectUrl = `${window.location.origin}/verify`;
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl
+        emailRedirectTo: redirectUrl,
+        data: {
+          full_name: fullName,
+          phone: phone || null
+        }
       }
     });
 
     if (error) return { error };
 
+    // For testing: auto-confirm email to avoid rate limiting
+    // In production, remove this block and require email verification
+    if (data.user && !data.session) {
+      // Email confirmation required - this triggers the rate limit
+      // For testing, we can skip this
+      console.log('Signup successful - check email to confirm');
+    }
+
+    // Note: Profile creation is now handled by a database trigger 
+    // to ensure it works even if email confirmation is required.
+
     if (data.user) {
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: data.user.id,
-          full_name: fullName,
-          phone: phone || null
-        });
-
-      if (profileError) {
-        console.error('Profile creation error:', profileError);
-      }
-
-      // Assign default role as applicant
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: data.user.id,
-          role: 'applicant'
-        });
+      // Assign default role as applicant using RPC (bypasses RLS)
+      const { error: roleError } = await supabase.rpc('assign_default_role' as any, {
+        p_user_uuid: data.user.id
+      });
 
       if (roleError) {
         console.error('Role assignment error:', roleError);
@@ -146,9 +161,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('SignOut error:', error);
+    }
+    
+    // Clear all state
+    setUser(null);
+    setSession(null);
     setRole(null);
     setProfile(null);
+    
+    // Clear localStorage/sessionStorage
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Force full page reload and redirect
+    window.location.replace('/auth');
   };
 
   return (

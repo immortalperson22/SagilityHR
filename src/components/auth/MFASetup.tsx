@@ -1,57 +1,40 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Mail, Phone } from 'lucide-react';
-import { sendSMSOTP, sendEmailOTP, generateOTP, enableUserMFA } from '@/lib/mfa';
+import { Shield, Mail } from 'lucide-react';
+import { sendEmailOTP, generateOTP, enableUserMFA } from '@/lib/mfa';
 
 interface MFASetupProps {
   onComplete: () => void;
 }
 
 export default function MFASetup({ onComplete }: MFASetupProps) {
-  const [selectedMethod, setSelectedMethod] = useState<'email' | 'sms'>('email');
   const [isVerifying, setIsVerifying] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [expectedCode, setExpectedCode] = useState('');
   const [step, setStep] = useState<'choose' | 'verify'>('choose');
 
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const handleSendCode = async () => {
-    if (!user || !profile) return;
+    if (!user) return;
 
     setIsVerifying(true);
     const code = generateOTP();
     setExpectedCode(code);
 
     try {
-      let success = false;
-
-      if (selectedMethod === 'email') {
-        success = await sendEmailOTP(user.email || '', code);
-      } else {
-        if (!profile.phone) {
-          toast({
-            title: 'Phone required',
-            description: 'Please add a phone number to your profile for SMS verification.',
-            variant: 'destructive',
-          });
-          setIsVerifying(false);
-          return;
-        }
-        success = await sendSMSOTP(profile.phone, code);
-      }
+      const success = await sendEmailOTP(user.email || '', code);
 
       if (success) {
         setStep('verify');
         toast({
           title: 'Code sent!',
-          description: `Check your ${selectedMethod === 'email' ? 'email' : 'phone'} for the verification code.`,
+          description: 'Check your email for the verification code.',
         });
       }
     } catch (error) {
@@ -78,11 +61,7 @@ export default function MFASetup({ onComplete }: MFASetupProps) {
     if (!user) return;
 
     try {
-      const success = await enableUserMFA(
-        user.id,
-        selectedMethod,
-        profile?.phone
-      );
+      const success = await enableUserMFA(user.id, 'email');
 
       if (success) {
         toast({
@@ -109,7 +88,7 @@ export default function MFASetup({ onComplete }: MFASetupProps) {
             Verify Your Code
           </CardTitle>
           <CardDescription>
-            Enter the 6-digit code sent to your {selectedMethod === 'email' ? 'email' : 'phone'}.
+            Enter the 6-digit code sent to your email.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -159,34 +138,16 @@ export default function MFASetup({ onComplete }: MFASetupProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <RadioGroup value={selectedMethod} onValueChange={(value) => setSelectedMethod(value as 'email' | 'sms')}>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="email" id="email" />
-            <Label htmlFor="email" className="flex items-center gap-2 cursor-pointer">
-              <Mail className="w-4 h-4" />
-              Email verification (recommended - always available)
-            </Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="sms" id="sms" />
-            <Label htmlFor="sms" className="flex items-center gap-2 cursor-pointer">
-              <Phone className="w-4 h-4" />
-              SMS verification (needs phone number)
-            </Label>
-          </div>
-        </RadioGroup>
-
-        {selectedMethod === 'sms' && !profile?.phone && (
-          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-            <p className="text-sm text-yellow-800">
-              You need to add a phone number to your profile for SMS verification.
-            </p>
-          </div>
-        )}
+        <div className="text-center py-4">
+          <Mail className="w-12 h-12 mx-auto mb-4 text-primary" />
+          <p className="text-sm text-muted-foreground">
+            You will receive verification codes via email.
+          </p>
+        </div>
 
         <Button
           onClick={handleSendCode}
-          disabled={isVerifying || (selectedMethod === 'sms' && !profile?.phone)}
+          disabled={isVerifying}
           className="w-full"
         >
           {isVerifying ? 'Sending Code...' : 'Send Verification Code'}

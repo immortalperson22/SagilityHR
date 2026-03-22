@@ -1,0 +1,6 @@
+-- Add approval tracking columns to applicants table
+ALTER TABLE public.applicants 
+ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS approved_by UUID REFERENCES auth.users(id) DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS rejected_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS rejected_by UUID REFERENCES auth.users(id) DEFAULT NULL;
