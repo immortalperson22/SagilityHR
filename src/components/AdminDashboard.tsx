@@ -81,9 +81,8 @@ export default function AdminDashboard() {
       // Fetch user_roles for admin and hr
       const { data: rolesData, error: fetchError } = await supabase
         .from('user_roles')
-        .select('user_id, role, created_at')
-        .in('role', ['admin', 'hr'])
-        .order('created_at', { ascending: false });
+        .select('user_id, role')
+        .in('role', ['admin', 'hr']);
 
       if (fetchError) {
         console.error('Error fetching team members:', fetchError);
@@ -109,8 +108,7 @@ export default function AdminDashboard() {
           user_id: item.user_id,
           role: item.role,
           email: profile?.email || 'No email',
-          full_name: profile?.full_name || 'Unknown',
-          created_at: item.created_at
+          full_name: profile?.full_name || 'Unknown'
         };
       });
 
