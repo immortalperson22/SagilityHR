@@ -153,7 +153,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (roleError) {
-        console.error('Role assignment error:', roleError);
+        console.error('❌ Role (RPC) Error:', roleError);
+      } else {
+        console.log('✅ Default role assigned via RPC');
       }
     }
 
