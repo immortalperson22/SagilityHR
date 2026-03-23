@@ -288,7 +288,16 @@ export default function AdminDashboard() {
         }
       });
 
-      if (functionError) throw functionError;
+      if (functionError) {
+        let errorMessage = functionError.message;
+        try {
+          const body = await functionError.context?.json();
+          if (body?.error) errorMessage = body.error;
+        } catch (e) {
+          console.error('Error parsing error body:', e);
+        }
+        throw new Error(errorMessage);
+      }
       if (data?.error) throw new Error(data.error);
 
       toast.success(`Invited ${inviteName} as ${inviteRole === 'admin' ? 'Admin' : 'HR Employee'}!`);
