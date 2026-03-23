@@ -35,10 +35,12 @@ interface ApplicantRecord {
   rejected_by: string | null;
 }
 
-const PRE_EMPLOYMENT_TEMPLATE = 'https://drive.google.com/uc?export=download&id=1GHeJTZPXcIdZkMg8X0DaV9O4adqA-H5c';
-const POLICY_TEMPLATE = 'https://drive.google.com/uc?export=download&id=1moSDwjV9A4UJngeGBJGTfQbFmiMlgXMl';
+const PRE_EMPLOYMENT_TEMPLATE = 'https://www.sejda.com/sign-pdf?files=%5B%7B%22downloadUrl%22%3A%22https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1GHeJTZPXcIdZkMg8X0DaV9O4adqA-H5c%22%7D%5D';
+const POLICY_TEMPLATE = 'https://www.sejda.com/sign-pdf?files=%5B%7B%22downloadUrl%22%3A%22https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1moSDwjV9A4UJngeGBJGTfQbFmiMlgXMl%22%7D%5D';
 
-const getSejdaUrl = (fileUrl: string) => {
+const getSejdaUrl = (fileUrl: string | null, template: string) => {
+  if (!fileUrl) return template;
+  // If we have a fileUrl (from a submitted doc), we wrap it in Sejda
   return `https://www.sejda.com/sign-pdf?files=[${JSON.stringify({ downloadUrl: fileUrl })}]`;
 };
 
@@ -363,7 +365,7 @@ export default function ApplicantDashboard() {
             </Button>
 
             <a
-              href={getSejdaUrl(applicant?.pre_employment_url || PRE_EMPLOYMENT_TEMPLATE)}
+              href={getSejdaUrl(applicant?.pre_employment_url, PRE_EMPLOYMENT_TEMPLATE)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 w-fit"
@@ -443,7 +445,7 @@ export default function ApplicantDashboard() {
             </Button>
 
             <a
-              href={getSejdaUrl(applicant?.policy_rules_url || POLICY_TEMPLATE)}
+              href={getSejdaUrl(applicant?.policy_rules_url, POLICY_TEMPLATE)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 w-fit"
