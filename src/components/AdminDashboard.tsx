@@ -272,46 +272,35 @@ export default function AdminDashboard() {
 
     setInviting(true);
     try {
-      // Generate cryptographically secure temporary password
+      // Generate secure temporary password locally to ensure consistency
       const array = new Uint8Array(16);
       crypto.getRandomValues(array);
       const randomPart = Array.from(array, b => b.toString(36).padStart(2, '0')).join('').slice(0, 12);
       const tempPassword = 'Welc@' + randomPart;
 
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: inviteEmail,
-        password: tempPassword,
-        email_confirm: true,
-        user_metadata: { full_name: inviteName }
+      const { data, error: functionError } = await supabase.functions.invoke('admin-invite-user', {
+        body: { 
+          email: inviteEmail,
+          fullName: inviteName,
+          role: inviteRole,
+          password: tempPassword
+        }
       });
 
-      if (authError) throw authError;
+      if (functionError) throw functionError;
+      if (data?.error) throw new Error(data.error);
 
-      if (authData.user) {
-        await supabase.from('profiles').insert({
-          id: authData.user.id,
-          user_id: authData.user.id,
-          full_name: inviteName,
-          phone: null
-        });
+      toast.success(`Invited ${inviteName} as ${inviteRole === 'admin' ? 'Admin' : 'HR Employee'}!`);
+      setInviteSuccess(true);
+      fetchTeamMembers();
 
-        await supabase.from('user_roles').insert({
-          user_id: authData.user.id,
-          role: inviteRole
-        });
-
-        toast.success(`Invited ${inviteName} as ${inviteRole === 'admin' ? 'Admin' : 'HR Employee'}!`);
-        setInviteSuccess(true);
-        fetchTeamMembers();
-
-        setTimeout(() => {
-          setShowInviteModal(false);
-          setInviteEmail('');
-          setInviteName('');
-          setInviteRole('hr');
-          setInviteSuccess(false);
-        }, 2000);
-      }
+      setTimeout(() => {
+        setShowInviteModal(false);
+        setInviteEmail('');
+        setInviteName('');
+        setInviteRole('hr');
+        setInviteSuccess(false);
+      }, 2000);
     } catch (error: any) {
       console.error('Error inviting user:', error);
       toast.error(error.message || 'Failed to invite user');
@@ -647,78 +636,101 @@ export default function AdminDashboard() {
       )}
 
       {showInviteModal && isAdmin && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Invite Team Member</CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => setShowInviteModal(false)}>
-                <X className="w-4 h-4" />
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+          <div className="bg-card w-full max-w-md border border-border/50 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 scale-100">
+            <div className="bg-primary/5 p-6 border-b border-border/50 relative">
+              <button 
+                onClick={() => setShowInviteModal(false)}
+                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+              <h3 className="text-xl font-heading font-bold flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-primary" />
+                Invite Team Member
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">Add a new administrator or HR employee</p>
+            </div>
+            
+            <div className="p-6 space-y-5">
               {inviteSuccess ? (
-                <div className="text-center py-8">
-                  <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                  <p className="text-lg font-medium">Invitation Sent!</p>
-                  <p className="text-sm text-muted-foreground">The new member can now sign in.</p>
+                <div className="py-12 text-center space-y-4 animate-in zoom-in-90 duration-500">
+                  <div className="w-16 h-16 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle className="w-10 h-10" />
+                  </div>
+                  <h4 className="text-xl font-bold">Invitation Sent!</h4>
+                  <p className="text-muted-foreground">{inviteName} has been added to the team.</p>
                 </div>
               ) : (
                 <>
                   <div className="space-y-2">
-                    <Label>Full Name</Label>
+                    <Label htmlFor="fullName" className="text-sm font-semibold">Full Name</Label>
                     <Input
-                      placeholder="Enter full name"
+                      id="fullName"
+                      placeholder="e.g. John Paul Jeruta"
                       value={inviteName}
                       onChange={(e) => setInviteName(e.target.value)}
+                      className="bg-muted/30 border-border/50 focus:ring-primary h-11"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Email Address</Label>
+                    <Label htmlFor="email" className="text-sm font-semibold">Email Address</Label>
                     <Input
+                      id="email"
                       type="email"
-                      placeholder="Enter email address"
+                      placeholder="johnpauljeruta@gmail.com"
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
+                      className="bg-muted/30 border-border/50 focus:ring-primary h-11"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Role</Label>
+                    <Label htmlFor="role" className="text-sm font-semibold">Role</Label>
                     <select
-                      className="w-full p-2 border border-border rounded-lg bg-background"
+                      id="role"
                       value={inviteRole}
-                      onChange={(e) => setInviteRole(e.target.value as 'admin' | 'hr')}
+                      onChange={(e) => setInviteRole(e.target.value as 'admin'|'hr')}
+                      className="w-full h-11 bg-muted/30 border border-border/50 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                     >
-                      <option value="hr">HR Employee (View Only)</option>
                       <option value="admin">Admin (Full Access)</option>
+                      <option value="hr">HR Employee (Reviewer Access)</option>
                     </select>
                   </div>
-                  <div className="bg-muted/50 p-3 rounded-lg">
-                    <p className="text-xs text-muted-foreground">
-                      <strong>Note:</strong> A new account will be created with a temporary password.
-                      The invitee should change their password after first login.
-                    </p>
+                  
+                  <div className="pt-4 flex gap-3">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowInviteModal(false)}
+                      className="flex-1 border-border/50 h-11"
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={handleInviteTeamMember}
+                      disabled={inviting || !inviteEmail || !inviteName}
+                      className="flex-1 h-11 shadow-lg shadow-primary/20"
+                    >
+                      {inviting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Inviting...
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Send Invite
+                        </>
+                      )}
+                    </Button>
                   </div>
-                  <Button
-                    className="w-full"
-                    onClick={handleInviteTeamMember}
-                    disabled={inviting || !inviteEmail || !inviteName}
-                  >
-                    {inviting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Creating Account...
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Send Invitation
-                      </>
-                    )}
-                  </Button>
+                  
+                  <p className="text-[10px] text-muted-foreground text-center italic mt-2">
+                    Note: A temporary password will be generated automatically.
+                  </p>
                 </>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
     </div>
