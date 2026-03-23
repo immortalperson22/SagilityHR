@@ -700,7 +700,7 @@ export default function AdminDashboard() {
                     <Label htmlFor="fullName" className="text-sm font-semibold">Full Name</Label>
                     <Input
                       id="fullName"
-                      placeholder="e.g. John Paul Jeruta"
+                      placeholder="e.g. Jane Doe"
                       value={inviteName}
                       onChange={(e) => setInviteName(e.target.value)}
                       className="bg-muted/30 border-border/50 focus:ring-primary h-11"
@@ -711,7 +711,7 @@ export default function AdminDashboard() {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="johnpauljeruta@gmail.com"
+                      placeholder="jane@example.com"
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
                       className="bg-muted/30 border-border/50 focus:ring-primary h-11"
