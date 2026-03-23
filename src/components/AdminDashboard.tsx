@@ -61,6 +61,15 @@ export default function AdminDashboard() {
   const [inviteSuccess, setInviteSuccess] = useState(false);
   const [invitePassword, setInvitePassword] = useState('');
 
+  const handleCloseInviteModal = () => {
+    setShowInviteModal(false);
+    setInviteEmail('');
+    setInviteName('');
+    setInviteRole('hr');
+    setInviteSuccess(false);
+    setInvitePassword('');
+  };
+
   const isAdmin = currentUserRole === 'admin';
   const isHR = currentUserRole === 'hr';
 
@@ -646,20 +655,24 @@ export default function AdminDashboard() {
       {showInviteModal && isAdmin && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
           <div className="bg-card w-full max-w-md border border-border/50 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 scale-100">
-            <div className="bg-primary/5 p-6 border-b border-border/50 relative">
-              <button 
-                onClick={() => setShowInviteModal(false)}
-                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
+            <div className="flex items-center justify-between p-6 border-b border-border/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center">
+                  <UserPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Invite Team Member</h3>
+                  <p className="text-xs text-muted-foreground">Add a new administrator or HR employee</p>
+                </div>
+              </div>
+              <button
+                onClick={handleCloseInviteModal}
+                className="p-2 hover:bg-muted rounded-full transition-colors"
               >
-                <XCircle className="w-5 h-5" />
+                <X className="w-5 h-5" />
               </button>
-              <h3 className="text-xl font-heading font-bold flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-primary" />
-                Invite Team Member
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">Add a new administrator or HR employee</p>
             </div>
-            
+
             <div className="p-6 space-y-5">
               {inviteSuccess ? (
                 <div className="py-8 text-center space-y-4 animate-in zoom-in-90 duration-500">
@@ -670,14 +683,14 @@ export default function AdminDashboard() {
                   <p className="text-muted-foreground text-sm">
                     Account created for <strong>{inviteName}</strong>.
                   </p>
-                  
+
                   <div className="bg-muted/50 p-4 rounded-xl space-y-2 border border-border/50">
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Temporary Password</p>
                     <div className="flex items-center justify-between gap-2 bg-background p-2 rounded border border-border/50">
                       <code className="text-primary font-mono font-bold text-lg">{invitePassword}</code>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
+                      <Button
+                        size="sm"
+                        variant="ghost"
                         className="h-8 w-8 p-0"
                         onClick={() => {
                           navigator.clipboard.writeText(invitePassword);
@@ -692,19 +705,15 @@ export default function AdminDashboard() {
                     </p>
                   </div>
 
-                  <Button 
-                    className="w-full mt-4" 
-                    onClick={() => {
-                      setShowInviteModal(false);
-                      setInviteSuccess(false);
-                      setInvitePassword('');
-                    }}
+                  <Button
+                    className="w-full mt-4"
+                    onClick={handleCloseInviteModal}
                   >
                     Okay, Done
                   </Button>
                 </div>
               ) : (
-                <>
+                <form onSubmit={handleInviteTeamMember}>
                   <div className="space-y-2">
                     <Label htmlFor="fullName" className="text-sm font-semibold">Full Name</Label>
                     <Input
@@ -713,9 +722,10 @@ export default function AdminDashboard() {
                       value={inviteName}
                       onChange={(e) => setInviteName(e.target.value)}
                       className="bg-muted/30 border-border/50 focus:ring-primary h-11"
+                      required
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 mt-4">
                     <Label htmlFor="email" className="text-sm font-semibold">Email Address</Label>
                     <Input
                       id="email"
@@ -724,9 +734,10 @@ export default function AdminDashboard() {
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
                       className="bg-muted/30 border-border/50 focus:ring-primary h-11"
+                      required
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 mt-4">
                     <Label htmlFor="role" className="text-sm font-semibold">Role</Label>
                     <select
                       id="role"
@@ -738,19 +749,20 @@ export default function AdminDashboard() {
                       <option value="hr">HR Employee (Reviewer Access)</option>
                     </select>
                   </div>
-                  
+
                   <div className="pt-4 flex gap-3">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setShowInviteModal(false)}
-                      className="flex-1 border-border/50 h-11"
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 h-11 border-border/50"
+                      onClick={handleCloseInviteModal}
                     >
                       Cancel
                     </Button>
-                    <Button 
-                      onClick={handleInviteTeamMember}
-                      disabled={inviting || !inviteEmail || !inviteName}
+                    <Button
+                      type="submit"
                       className="flex-1 h-11 shadow-lg shadow-primary/20"
+                      disabled={inviting || !inviteEmail || !inviteName}
                     >
                       {inviting ? (
                         <>
@@ -769,7 +781,7 @@ export default function AdminDashboard() {
                   <p className="text-[10px] text-muted-foreground text-center italic mt-2">
                     Note: A temporary password will be generated automatically.
                   </p>
-                </>
+                </form>
               )}
             </div>
           </div>
