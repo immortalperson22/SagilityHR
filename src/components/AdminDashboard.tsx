@@ -109,7 +109,7 @@ export default function AdminDashboard() {
           user_id: item.user_id,
           role: item.role,
           email: profile?.email || 'No email',
-          full_name: profile?.full_name || 'Unknown'
+          full_name: profile?.full_name || profile?.email?.split('@')[0] || 'Member'
         };
       });
 
@@ -446,7 +446,7 @@ export default function AdminDashboard() {
                         {member.full_name}
                         {member.user_id === user?.id && <span className="text-xs ml-2 text-primary">(You)</span>}
                       </p>
-                      <p className="text-xs text-muted-foreground">{member.email}</p>
+                      <p className="text-[10px] text-muted-foreground font-mono">{member.email}</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge className={member.role === 'admin' ? 'bg-purple-500' : 'bg-blue-500'}>
