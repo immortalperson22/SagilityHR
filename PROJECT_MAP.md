@@ -119,8 +119,8 @@ SagilityHR/
 | React Components | 50+ | Dashboard, Forms, UI elements |
 | Page Components | 10+ | Auth, Dashboard, Profile |
 | Custom Hooks | 5+ | useAuth, useTheme |
-| Database Migrations | 10+ | Schema, RLS, Functions |
-| Edge Functions | 2 | Email, Auto-delete |
+| Database Migrations | 12+ | Schema, RLS, Functions, Email Column |
+| Edge Functions | 4 | Email, Auto-delete, Invite, Delete |
 | Configuration Files | 15+ | Vite, TypeScript, ESLint |
 
 ---
@@ -154,7 +154,7 @@ SagilityHR/
 | Supabase Auth | User authentication | JavaScript SDK |
 | Supabase Database | Data storage | REST API |
 | Supabase Storage | PDF file storage | SDK |
-| Nodemailer (Edge Function) | Email notifications | SMTP |
+| Supabase Edge Functions | Admin Actions & Email | REST API (POST) |
 
 ### 6.2 Authentication Flow
 1. User registers with email/password
@@ -173,8 +173,9 @@ SagilityHR/
 | Password Security | Supabase Auth (bcrypt hashing) |
 | MFA Support | TOTP authenticator apps |
 | Session Management | JWT tokens |
-| Authorization | Role-based access control |
-| Data Protection | Row Level Security (RLS) |
+| Authorization | Role-based access control (RBAC) |
+| Admin Isolation | Zero-Egress Edge Functions |
+| Data Protection | Row Level Security (RLS) + UNIQUE Constraints |
 | Input Validation | Client + Server side |
 | XSS Prevention | React escaping + CSP |
 | CSRF Protection | Supabase built-in |

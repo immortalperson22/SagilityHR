@@ -12,7 +12,8 @@ This document outlines the comprehensive security measures implemented in our **
 |-------|-----------|------------------|
 | **Frontend** | React App | Input Validation, Password Strength Enforcement |
 | **Backend** | Supabase | Auth, RLS, API Security |
-| **Database** | PostgreSQL | Row Level Security, Constraints |
+| **Data/Logic** | Edge Functions | Zero-Egress Admin Isolation, Service Role Auth |
+| **Database** | PostgreSQL | Row Level Security, Unique Constraints, Triggers |
 | **Infrastructure** | Environment | Secret Management, Secure Config |
 
 ---
@@ -100,7 +101,10 @@ CREATE POLICY "Users can view their own applications"
 ON public.applicants FOR SELECT
 USING (auth.uid() = user_id);
 
--- Admins: Can view all data
+-- user_roles: Strict 1:1 role per user constraint
+ALTER TABLE public.user_roles ADD CONSTRAINT unique_user_id UNIQUE (user_id);
+
+-- Admins: Can view all data (Verified by user_id check in rls)
 CREATE POLICY "Admins can view all"
 ON public.applicants FOR SELECT
 USING (
@@ -180,6 +184,25 @@ const validatePassword = (password: string): string => {
   return '';
 };
 ```
+
+### 7. Zero-Egress Security (Edge Functions)
+
+**Purpose:** Isolate sensitive administrative actions from the client  
+**Attack Prevented:** Auth Admin API abuse, client-side credential leaking, bypass of business logic  
+
+**Implementation:**
+- Sensitive operations (Invite User, Delete User) are moved to **Supabase Edge Functions**.
+- Functions use the `SUPABASE_SERVICE_ROLE_KEY` internally (never exposed to client).
+- Frontend calls functions using a standard JWT; the function then verifies the user's 'admin' role before proceeding.
+- Result: The user's browser never directly interacts with the core Auth Admin API.
+
+### 8. Database Integrity
+
+**Purpose:** Enforce business rules at the schema level  
+**Implementation:**
+- `user_roles`: `UNIQUE(user_id)` prevents a user holding multiple conflicting roles.
+- `profiles`: `email` column added to ensure auditability of invited users even before full profile completion.
+- `upsert` logic: Used in Edge Functions to gracefully handle race conditions between auto-triggers and manual invites.
 
 ---
 

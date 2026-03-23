@@ -40,7 +40,7 @@ A comprehensive HR management platform designed to streamline the employee onboa
 │                        SERVICE LAYER                             │
 │  ┌──────────────────┐  ┌──────────────────┐  ┌────────────────┐│
 │  │   Vercel CDN     │  │  Supabase Auth  │  │ Edge Functions ││
-│  │  (Static Files)  │  │  (Authentication│  │ (Email/Logic)  ││
+│  │  (Static Files)  │  │ (Admin Auth Isolate)│  │ (Recruitment Logic)││
 │  └──────────────────┘  └──────────────────┘  └────────────────┘│
 └─────────────────────────────────────────────────────────────────┘
                               │
@@ -125,6 +125,7 @@ A comprehensive HR management platform designed to streamline the employee onboa
 | id | UUID | PRIMARY KEY | Auto-generated |
 | user_id | UUID | NOT NULL, UNIQUE | FK to auth.users |
 | full_name | TEXT | NOT NULL | User's full name |
+| email | TEXT | NULLABLE | Identification fallback |
 | phone | TEXT | NULLABLE | Contact number |
 | created_at | TIMESTAMPTZ | DEFAULT NOW() | Record creation |
 | updated_at | TIMESTAMPTZ | DEFAULT NOW() | Last update |
@@ -133,8 +134,8 @@ A comprehensive HR management platform designed to streamline the employee onboa
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | UUID | PRIMARY KEY | Auto-generated |
-| user_id | UUID | NOT NULL, FK | FK to auth.users |
-| role | TEXT | NOT NULL, CHECK | 'admin', 'hr', 'applicant' |
+| user_id | UUID | NOT NULL, UNIQUE | FK to auth.users |
+| role | TEXT | NOT NULL | 'admin', 'employee', 'applicant' |
 | created_at | TIMESTAMPTZ | DEFAULT NOW() | Role assignment date |
 
 #### Table: `public.applicants`
@@ -239,7 +240,9 @@ The system implements comprehensive RLS policies:
 
 | Function | Trigger | Purpose |
 |----------|---------|---------|
-| send-approval-email | Database Trigger | Send email on approval |
+| send-approval-email | Frontend Call | Send professional onboarding email |
+| admin-invite-user | Frontend Call | Securely create user/profile/role |
+| admin-delete-user | Frontend Call | Wipe user data and auth account |
 | delete-old-records | Scheduled (Cron) | Auto-delete after 45 days |
 
 ---
