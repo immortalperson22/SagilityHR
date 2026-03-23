@@ -72,10 +72,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          setTimeout(() => {
-            fetchUserRole(session.user.id);
-            fetchProfile(session.user.id);
-          }, 0);
+          fetchUserRole(session.user.id);
+          fetchProfile(session.user.id);
         } else {
           setRole(null);
           setProfile(null);
@@ -84,40 +82,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Initial session check
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchUserRole(session.user.id);
-        fetchProfile(session.user.id);
+        await fetchUserRole(session.user.id);
+        await fetchProfile(session.user.id);
       }
       setLoading(false);
-    });
+    };
 
-    // Real-time listener for role changes
-    const roleChannel = supabase
-      .channel('public:user_roles')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_roles',
-          filter: user ? `user_id=eq.${user.id}` : undefined
-        },
-        (payload) => {
-          if (payload.new && (payload.new as any).role) {
-            setRole((payload.new as any).role as AppRole);
-          }
-        }
-      )
-      .subscribe();
+    checkSession();
 
     return () => {
       subscription.unsubscribe();
-      supabase.removeChannel(roleChannel);
     };
-  }, [user]);
+  }, []); // Empty dependency array - run ONCE on mount
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
