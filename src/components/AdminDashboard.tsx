@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Loader2, FileText, CheckCircle, XCircle, Eye, Trash2, Users, UserPlus, X } from 'lucide-react';
+import { Loader2, FileText, CheckCircle, XCircle, Eye, Trash2, Users, UserPlus, X, Copy } from 'lucide-react';
 
 interface Applicant {
   id: string;
@@ -59,6 +59,7 @@ export default function AdminDashboard() {
   const [inviteRole, setInviteRole] = useState<'admin' | 'hr'>('hr');
   const [inviting, setInviting] = useState(false);
   const [inviteSuccess, setInviteSuccess] = useState(false);
+  const [invitePassword, setInvitePassword] = useState('');
 
   const isAdmin = currentUserRole === 'admin';
   const isHR = currentUserRole === 'hr';
@@ -291,16 +292,14 @@ export default function AdminDashboard() {
       if (data?.error) throw new Error(data.error);
 
       toast.success(`Invited ${inviteName} as ${inviteRole === 'admin' ? 'Admin' : 'HR Employee'}!`);
+      setInvitePassword(tempPassword);
       setInviteSuccess(true);
       fetchTeamMembers();
 
-      setTimeout(() => {
-        setShowInviteModal(false);
-        setInviteEmail('');
-        setInviteName('');
-        setInviteRole('hr');
-        setInviteSuccess(false);
-      }, 2000);
+      // Clear the form fields but keep the password visible in success state
+      setInviteEmail('');
+      setInviteName('');
+      setInviteRole('hr');
     } catch (error: any) {
       console.error('Error inviting user:', error);
       toast.error(error.message || 'Failed to invite user');
@@ -654,12 +653,46 @@ export default function AdminDashboard() {
             
             <div className="p-6 space-y-5">
               {inviteSuccess ? (
-                <div className="py-12 text-center space-y-4 animate-in zoom-in-90 duration-500">
+                <div className="py-8 text-center space-y-4 animate-in zoom-in-90 duration-500">
                   <div className="w-16 h-16 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto">
                     <CheckCircle className="w-10 h-10" />
                   </div>
                   <h4 className="text-xl font-bold">Invitation Sent!</h4>
-                  <p className="text-muted-foreground">{inviteName} has been added to the team.</p>
+                  <p className="text-muted-foreground text-sm">
+                    Account created for <strong>{inviteName}</strong>.
+                  </p>
+                  
+                  <div className="bg-muted/50 p-4 rounded-xl space-y-2 border border-border/50">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Temporary Password</p>
+                    <div className="flex items-center justify-between gap-2 bg-background p-2 rounded border border-border/50">
+                      <code className="text-primary font-mono font-bold text-lg">{invitePassword}</code>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-8 w-8 p-0"
+                        onClick={() => {
+                          navigator.clipboard.writeText(invitePassword);
+                          toast.success('Password copied!');
+                        }}
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground italic">
+                      Copy and send this to the new member. They should change it via "Forgot Password" after logging in.
+                    </p>
+                  </div>
+
+                  <Button 
+                    className="w-full mt-4" 
+                    onClick={() => {
+                      setShowInviteModal(false);
+                      setInviteSuccess(false);
+                      setInvitePassword('');
+                    }}
+                  >
+                    Okay, Done
+                  </Button>
                 </div>
               ) : (
                 <>
