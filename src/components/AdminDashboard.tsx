@@ -36,7 +36,7 @@ interface TeamMember {
   role: string;
   email: string;
   full_name: string;
-  created_at: string;
+  created_at?: string;
 }
 
 export default function AdminDashboard() {
@@ -245,40 +245,20 @@ export default function AdminDashboard() {
 
     setSaving(true);
     try {
-      if (selectedApplicant.pre_employment_url) {
-        const prePath = selectedApplicant.pre_employment_url.split('/storage/v1/object/sign/')[1]?.split('?')[0];
-        if (prePath) {
-          await supabase.storage.from('applicant-docs').remove([prePath]);
-        }
-      }
-      if (selectedApplicant.policy_rules_url) {
-        const policyPath = selectedApplicant.policy_rules_url.split('/storage/v1/object/sign/')[1]?.split('?')[0];
-        if (policyPath) {
-          await supabase.storage.from('applicant-docs').remove([policyPath]);
-        }
-      }
+      // Invoke the secure admin-delete-user Edge Function
+      const { data, error: functionError } = await supabase.functions.invoke('admin-delete-user', {
+        body: { userId: selectedApplicant.user_id }
+      });
 
-      const { error: authError } = await supabase.auth.admin.deleteUser(selectedApplicant.user_id);
-      if (authError) {
-        console.error('Error deleting user:', authError);
-      }
+      if (functionError) throw functionError;
+      if (data?.error) throw new Error(data.error);
 
-      await supabase.from('user_roles').delete().eq('user_id', selectedApplicant.user_id);
-      await supabase.from('profiles').delete().eq('user_id', selectedApplicant.user_id);
-
-      const { error: deleteError } = await supabase
-        .from('applicants' as any)
-        .delete()
-        .eq('id', selectedApplicant.id);
-
-      if (deleteError) throw deleteError;
-
-      toast.success('Applicant deleted successfully!');
+      toast.success('Applicant and all associated data deleted successfully!');
       setSelectedApplicant(null);
       fetchApplicants();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting:', error);
-      toast.error('Failed to delete applicant.');
+      toast.error(error.message || 'Failed to delete applicant.');
     } finally {
       setSaving(false);
     }
@@ -360,15 +340,19 @@ export default function AdminDashboard() {
     if (!confirmDelete) return;
 
     try {
-      await supabase.auth.admin.deleteUser(member.user_id);
-      await supabase.from('profiles').delete().eq('user_id', member.user_id);
-      await supabase.from('user_roles').delete().eq('user_id', member.user_id);
+      // Invoke the secure admin-delete-user Edge Function
+      const { data, error: functionError } = await supabase.functions.invoke('admin-delete-user', {
+        body: { userId: member.user_id }
+      });
+
+      if (functionError) throw functionError;
+      if (data?.error) throw new Error(data.error);
 
       toast.success(`${member.full_name} removed successfully`);
       fetchTeamMembers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting team member:', error);
-      toast.error('Failed to remove team member');
+      toast.error(error.message || 'Failed to remove team member');
     }
   };
 
