@@ -19,7 +19,8 @@ Sagility is an employee management platform designed to streamline HR operations
 - 📄 **Document Management** - PDF upload and submission workflow
 - 🌙 **Dark Mode Support** - Full dark mode toggle
 - 📱 **Responsive Design** - Works on desktop and mobile devices
-- 🔒 **Security First** - Row Level Security (RLS), input validation, secure coding practices
+- ⚡ **Edge Computing** - Secure server-side logic via Supabase Edge Functions (Admin tasks)
+- 🔒 **Zero-Egress Security** - Administrative actions (invite/delete) are fully isolated on the server
 
 ---
 
@@ -56,6 +57,7 @@ This project was developed as a capstone submission demonstrating:
 | Supabase | Backend-as-a-Service |
 | PostgreSQL | Relational database |
 | Supabase Auth | User authentication with MFA |
+| Supabase Edge Functions | Deno-based serverless logic for secure admin tasks |
 | Row Level Security | Database-level access control |
 
 ### Development Tools
@@ -138,7 +140,7 @@ CREATE TABLE public.user_roles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id),
   role TEXT NOT NULL CHECK (role IN ('admin', 'employee', 'applicant')),
-  UNIQUE(user_id, role)
+  UNIQUE(user_id)
 );
 
 -- Applicants Table
@@ -158,6 +160,7 @@ CREATE TABLE public.profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id),
   full_name TEXT NOT NULL,
+  email TEXT,
   phone TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()

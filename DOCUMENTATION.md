@@ -137,6 +137,29 @@ UI Refinement & Egress Optimization.
 - Database-level HTTP trigger for approval emails (avoiding direct DB egress).
 - Removed `extensions.http` dependency from the approval workflow.
 
+### Version 1.9 (March 23, 2026)
+Zero-Egress Security & Professional Recruitment UX.
+
+**Added:**
+- **Zero-Egress Edge Functions**: 
+  - `admin-invite-user`: Securely creates Auth users, profiles, and roles server-side using Service Role Key.
+  - `admin-delete-user`: Handles secure deletion of user data and accounts.
+- **Database Schema Updates**:
+  - `profiles` table: Added `email` column to improve identification.
+  - `user_roles` table: Added unique constraint on `user_id` to prevent role duplication and support robust `upsert`.
+- **Premium UI Enhancements**:
+  - Glassmorphism design for the invitation modal.
+  - Real-time temporary password display with "Copy to Clipboard" functionality.
+  - High-visibility team member list with name fallbacks and email subtexts.
+- **Robust UX**:
+  - Automatic form reset on modal close/cancel.
+  - Clear error feedback from Edge Functions (e.g., "User already exists").
+
+**Fixed:**
+- Resolved `403 Forbidden` errors by moving sensitive Admin Auth calls to Edge Functions.
+- Resolved `Duplicate Key` conflicts between manual insertion and database triggers using `upsert`.
+- Fixed "Unknown" team member names in the Admin Dashboard.
+
 ---
 
 ## Table of Contents
