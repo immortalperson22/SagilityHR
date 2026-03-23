@@ -101,16 +101,20 @@ Deno.serve(async (req) => {
     const userId = userData.user.id;
     console.log(`User created successfully in Auth: ${userId}`);
 
-    // 5. Create Profile
+    // 5. Create/Update Profile (Using upsert to sync with trigger)
+    console.log('Upserting profile...');
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .insert({
+      .upsert({
         user_id: userId,
         full_name: fullName,
-      });
+        email: email, // Added email for auditability
+      }, { onConflict: 'user_id' });
 
     if (profileError) {
       console.error('Error creating profile:', profileError.message);
+      // Delete user if profile fails (though upsert should usually succeed)
+      await supabaseAdmin.from('profiles').delete().eq('user_id', userId);
       await supabaseAdmin.auth.admin.deleteUser(userId);
       return new Response(JSON.stringify({ error: `Profile error: ${profileError.message}` }), {
         status: 400,
@@ -118,19 +122,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 6. Assign Role
-    console.log(`Assigning role: ${role}...`);
+    // 6. Assign/Update Role (Using upsert to sync with trigger)
+    console.log(`Assigning/Updating role: ${role}...`);
     const { error: assignRoleError } = await supabaseAdmin
       .from('user_roles')
-      .insert({
+      .upsert({
         user_id: userId,
         role: role as any,
-      });
+      }, { onConflict: 'user_id' });
 
     if (assignRoleError) {
       console.error('Error assigning role:', assignRoleError.message);
-      await supabaseAdmin.auth.admin.deleteUser(userId);
+      await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
       await supabaseAdmin.from('profiles').delete().eq('user_id', userId);
+      await supabaseAdmin.auth.admin.deleteUser(userId);
       return new Response(JSON.stringify({ error: `Role assignment error: ${assignRoleError.message}` }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

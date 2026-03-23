@@ -274,7 +274,9 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleInviteTeamMember = async () => {
+  const handleInviteTeamMember = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
     if (!inviteEmail || !inviteName) {
       toast.error('Please fill in all fields');
       return;
@@ -351,14 +353,27 @@ export default function AdminDashboard() {
         body: { userId: member.user_id }
       });
 
-      if (functionError) throw functionError;
+      if (functionError) {
+        // If it's a FunctionsHttpError, try to get the message from the body
+        let msg = functionError.message;
+        try {
+          // supabase-js often puts the body in context or error property
+          const body = await (functionError as any).context?.json();
+          if (body?.error) msg = body.error;
+          if (body?.diagnostic) msg += ` (${body.diagnostic})`;
+        } catch { /* ignore parse errors */ }
+        throw new Error(msg);
+      }
+      
       if (data?.error) throw new Error(data.error);
 
       toast.success(`${member.full_name} removed successfully`);
       fetchTeamMembers();
     } catch (error: any) {
       console.error('Error deleting team member:', error);
-      toast.error(error.message || 'Failed to remove team member');
+      toast.error(error.message || 'Failed to remove team member', {
+        duration: 6000 // Give them more time to read the diagnostic
+      });
     }
   };
 

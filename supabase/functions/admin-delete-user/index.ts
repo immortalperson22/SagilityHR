@@ -20,6 +20,10 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Missing environment variables: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+    }
+
     // 1. Create client with Service Role key (Admin privileges)
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -34,18 +38,28 @@ serve(async (req) => {
     const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
     if (authError || !caller) {
-      throw new Error("Unauthorized: Invalid session.");
+      throw new Error(`Unauthorized: Invalid session. Details: ${authError?.message || 'No user found'}`);
     }
 
-    // 4. Verify the caller is an ADMIN in the user_roles table
+    // 4. Verify the caller is an ADMIN (Using more robust check)
+    console.log(`Verifying caller permissions for: ${caller.id} (${caller.email})`);
+    
+    // Explicitly use public schema to be certain
     const { data: roleData, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', caller.id)
-      .single();
+      .maybeSingle();
 
-    if (roleError || roleData?.role !== 'admin') {
-      throw new Error("Forbidden: Only administrators can perform this action.");
+    if (roleError) {
+      console.error('Role check database error:', roleError.message);
+      throw new Error(`Forbidden: Database error during permission check: ${roleError.message}`);
+    }
+
+    if (!roleData || roleData.role !== 'admin') {
+      const foundRole = roleData?.role || 'none';
+      console.error(`Permission denied: User ${caller.id} has role: ${foundRole}`);
+      throw new Error(`Forbidden: Only administrators can perform this action. You have: ${foundRole}`);
     }
 
     // 5. Get the target userId from the request body
@@ -65,7 +79,6 @@ serve(async (req) => {
     // 6. Cleanup related data
     
     // A. Delete from Storage (bucket: applicant-docs)
-    // We first fetch the applicant record to get file paths
     const { data: applicant } = await supabaseAdmin
       .from('applicants')
       .select('pre_employment_url, policy_rules_url')
@@ -75,7 +88,6 @@ serve(async (req) => {
     const filesToRemove: string[] = [];
     
     if (applicant?.pre_employment_url) {
-      // Extract storage path from signed URL if it's there, or use directly if it's a relative path
       const pathPart = applicant.pre_employment_url.split('/storage/v1/object/sign/')[1]?.split('?')[0];
       if (pathPart) filesToRemove.push(pathPart);
     }
@@ -90,11 +102,12 @@ serve(async (req) => {
     }
 
     // B. Delete from Public Tables
-    // Cascade should ideally handle this, but let's be explicit for safety
     console.log("Deleting rows from public tables...");
-    await supabaseAdmin.from('applicants').delete().eq('user_id', userId);
-    await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
-    await supabaseAdmin.from('profiles').delete().eq('user_id', userId);
+    const tables = ['applicants', 'user_roles', 'profiles'];
+    for (const table of tables) {
+      const { error: tblError } = await supabaseAdmin.from(table).delete().eq('user_id', userId);
+      if (tblError) console.warn(`Error deleting from ${table}:`, tblError.message);
+    }
 
     // 7. FINALLY: Delete user from Auth System
     console.log(`Deleting user from auth.users: ${userId}`);
@@ -115,7 +128,10 @@ serve(async (req) => {
   } catch (error: any) {
     console.error("Admin Delete User Error:", error.message);
     const status = error.message.includes("Forbidden") ? 403 : error.message.includes("Unauthorized") ? 401 : 400;
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      diagnostic: "This error occurs when the server rejects your admin token or cannot find your role in the database. Try refreshing or logging out and back in."
+    }), {
       status,
       headers: { "Content-Type": "application/json", ...corsHeaders }
     });
