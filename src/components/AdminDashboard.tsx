@@ -300,13 +300,25 @@ export default function AdminDashboard() {
       });
 
       if (functionError) {
-        let errorMessage = functionError.message;
-        try {
-          const body = await functionError.context?.json();
-          if (body?.error) errorMessage = body.error;
-        } catch (e) {
-          console.error('Error parsing error body:', e);
+        console.error('Invite function error:', functionError);
+        let errorMessage = functionError.message || 'Unknown error';
+        
+        const errWithContext = functionError as any;
+        if (errWithContext.context) {
+          try {
+            const bodyText = await errWithContext.context.text();
+            console.error('Error response body:', bodyText);
+            try {
+              const body = JSON.parse(bodyText);
+              errorMessage = body.error || body.message || errorMessage;
+            } catch {
+              errorMessage = bodyText || errorMessage;
+            }
+          } catch {
+            // ignore
+          }
         }
+        
         throw new Error(errorMessage);
       }
       if (data?.error) throw new Error(data.error);
@@ -354,14 +366,27 @@ export default function AdminDashboard() {
       });
 
       if (functionError) {
-        // If it's a FunctionsHttpError, try to get the message from the body
-        let msg = functionError.message;
-        try {
-          // supabase-js often puts the body in context or error property
-          const body = await (functionError as any).context?.json();
-          if (body?.error) msg = body.error;
-          if (body?.diagnostic) msg += ` (${body.diagnostic})`;
-        } catch { /* ignore parse errors */ }
+        console.error('Function error:', functionError);
+        // Try to get more details from the error
+        let msg = functionError.message || 'Unknown error';
+        
+        // Check if there's a context with more info
+        const errWithContext = functionError as any;
+        if (errWithContext.context) {
+          try {
+            const bodyText = await errWithContext.context.text();
+            console.error('Error response body:', bodyText);
+            try {
+              const body = JSON.parse(bodyText);
+              msg = body.error || body.message || msg;
+            } catch {
+              msg = bodyText || msg;
+            }
+          } catch {
+            // ignore
+          }
+        }
+        
         throw new Error(msg);
       }
       
@@ -372,7 +397,7 @@ export default function AdminDashboard() {
     } catch (error: any) {
       console.error('Error deleting team member:', error);
       toast.error(error.message || 'Failed to remove team member', {
-        duration: 6000 // Give them more time to read the diagnostic
+        duration: 6000
       });
     }
   };

@@ -1,5 +1,4 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,151 +6,123 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    console.log('Admin Invite User: Function started');
-    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const authHeader = req.headers.get('Authorization')!;
 
-    // Initialize Admin client
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+    console.log('Invite function called');
+    console.log('Auth header present:', !!authHeader);
 
-    // 1. Get request body
-    const { email, fullName, role, password } = await req.json();
-    console.log(`Payload received - Email: ${email}, Role: ${role}`);
-
-    // 2. Validate caller (Must be Admin)
-    const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      console.error('No authorization header');
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      throw new Error("Missing authorization header. Please log out and log back in.");
     }
 
-    // Verify caller identity and role
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user: caller }, error: userError } = await supabaseAdmin.auth.getUser(token);
-
-    if (userError || !caller) {
-      console.error('Invalid caller token:', userError?.message);
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Query user_roles to check if caller is admin
-    const { data: roleData, error: roleCheckError } = await supabaseAdmin
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', caller.id)
-      .eq('role', 'admin')
-      .single();
-
-    if (roleCheckError || !roleData) {
-      console.error('Caller is not an admin or role check failed');
-      return new Response(JSON.stringify({ error: 'Only admins can invite users' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log(`Caller validated: ${caller.id} (Admin)`);
-
-    // 3. Validate Inputs
-    if (!email || !fullName || !role || !password) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return new Response(JSON.stringify({ error: 'Invalid email format' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // 4. Create the user in Auth
-    console.log('Creating user in Auth...');
-    const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name: fullName }
+    // Verify caller is admin using service role key directly
+    const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        'Authorization': authHeader,
+        'apikey': supabaseServiceKey
+      }
     });
 
-    if (createError) {
-      console.error('Error creating user:', createError.message);
-      return new Response(JSON.stringify({ error: createError.message }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    const userResponseText = await userResponse.text();
+    console.log('User response status:', userResponse.status);
+    console.log('User response body:', userResponseText);
+
+    if (!userResponse.ok) {
+      throw new Error(`Unauthorized: ${userResponseText}`);
     }
 
-    const userId = userData.user.id;
-    console.log(`User created successfully in Auth: ${userId}`);
+    const caller = JSON.parse(userResponseText);
 
-    // 5. Create/Update Profile (Using upsert to sync with trigger)
-    console.log('Upserting profile...');
-    const { error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .upsert({
+    // Check if caller is admin
+    const roleResponse = await fetch(
+      `${supabaseUrl}/rest/v1/user_roles?user_id=eq.${caller.id}&select=role`,
+      {
+        headers: {
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+          'apikey': supabaseServiceKey
+        }
+      }
+    );
+
+    const roles = await roleResponse.json();
+    if (!roles || !roles[0] || roles[0].role !== 'admin') {
+      throw new Error(`Forbidden: Only administrators can perform this action.`);
+    }
+
+    const { email, fullName, role, password } = await req.json();
+
+    // Create user using Auth Admin API
+    const createUserResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${supabaseServiceKey}`,
+        'apikey': supabaseServiceKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: fullName }
+      })
+    });
+
+    if (!createUserResponse.ok) {
+      const errorData = await createUserResponse.json();
+      throw new Error(errorData.msg || 'Failed to create user');
+    }
+
+    const userData = await createUserResponse.json();
+    const userId = userData.id;
+
+    // Create profile
+    await fetch(`${supabaseUrl}/rest/v1/profiles`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${supabaseServiceKey}`,
+        'apikey': supabaseServiceKey,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({
         user_id: userId,
         full_name: fullName,
-        email: email, // Added email for auditability
-      }, { onConflict: 'user_id' });
+        email: email
+      })
+    });
 
-    if (profileError) {
-      console.error('Error creating profile:', profileError.message);
-      // Delete user if profile fails (though upsert should usually succeed)
-      await supabaseAdmin.from('profiles').delete().eq('user_id', userId);
-      await supabaseAdmin.auth.admin.deleteUser(userId);
-      return new Response(JSON.stringify({ error: `Profile error: ${profileError.message}` }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // 6. Assign/Update Role (Using upsert to sync with trigger)
-    console.log(`Assigning/Updating role: ${role}...`);
-    const { error: assignRoleError } = await supabaseAdmin
-      .from('user_roles')
-      .upsert({
+    // Create role
+    await fetch(`${supabaseUrl}/rest/v1/user_roles`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${supabaseServiceKey}`,
+        'apikey': supabaseServiceKey,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({
         user_id: userId,
-        role: role as any,
-      }, { onConflict: 'user_id' });
+        role: role
+      })
+    });
 
-    if (assignRoleError) {
-      console.error('Error assigning role:', assignRoleError.message);
-      await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
-      await supabaseAdmin.from('profiles').delete().eq('user_id', userId);
-      await supabaseAdmin.auth.admin.deleteUser(userId);
-      return new Response(JSON.stringify({ error: `Role assignment error: ${assignRoleError.message}` }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log('Invitation process completed successfully');
     return new Response(JSON.stringify({ success: true, userId }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error: any) {
-    console.error('Unexpected error:', error.message);
+    console.error('Admin Invite User Error:', error.message);
+    const status = error.message.includes("Forbidden") ? 403 : error.message.includes("Unauthorized") ? 401 : 400;
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
+      status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

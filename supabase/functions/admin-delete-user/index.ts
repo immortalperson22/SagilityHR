@@ -1,17 +1,11 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-/**
- * Edge Function to securely delete a user and all associated data.
- * Must be called by an authenticated Admin.
- */
-serve(async (req) => {
-  // Handle CORS
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -19,107 +13,87 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error("Missing environment variables: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-    }
+    const authHeader = req.headers.get('Authorization')!;
 
-    // 1. Create client with Service Role key (Admin privileges)
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('Delete function called');
+    console.log('Auth header present:', !!authHeader);
 
-    // 2. Get the auth token from the request to verify the CALLER
-    const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error("Unauthorized: Missing authorization header.");
-    }
-    const token = authHeader.replace('Bearer ', '');
-    
-    // 3. Create a secondary client to verify the caller's role securely
-    const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    
-    if (authError || !caller) {
-      throw new Error(`Unauthorized: Invalid session. Details: ${authError?.message || 'No user found'}`);
+      throw new Error("Missing authorization header. Please log out and log back in.");
     }
 
-    // 4. Verify the caller is an ADMIN (Using more robust check)
-    console.log(`Verifying caller permissions for: ${caller.id} (${caller.email})`);
-    
-    // Explicitly use public schema to be certain
-    const { data: roleData, error: roleError } = await supabaseAdmin
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', caller.id)
-      .maybeSingle();
+    // Verify caller is admin
+    const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        'Authorization': authHeader,
+        'apikey': supabaseServiceKey
+      }
+    });
 
-    if (roleError) {
-      console.error('Role check database error:', roleError.message);
-      throw new Error(`Forbidden: Database error during permission check: ${roleError.message}`);
+    const userResponseText = await userResponse.text();
+    console.log('User response status:', userResponse.status);
+    console.log('User response body:', userResponseText);
+
+    if (!userResponse.ok) {
+      throw new Error(`Unauthorized: ${userResponseText}`);
     }
 
-    if (!roleData || roleData.role !== 'admin') {
-      const foundRole = roleData?.role || 'none';
-      console.error(`Permission denied: User ${caller.id} has role: ${foundRole}`);
-      throw new Error(`Forbidden: Only administrators can perform this action. You have: ${foundRole}`);
+    const caller = JSON.parse(userResponseText);
+
+    // Check if caller is admin
+    const roleResponse = await fetch(
+      `${supabaseUrl}/rest/v1/user_roles?user_id=eq.${caller.id}&select=role`,
+      {
+        headers: {
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+          'apikey': supabaseServiceKey
+        }
+      }
+    );
+
+    const roles = await roleResponse.json();
+    if (!roles || !roles[0] || roles[0].role !== 'admin') {
+      throw new Error(`Forbidden: Only administrators can perform this action.`);
     }
 
-    // 5. Get the target userId from the request body
-    const body = await req.json();
-    const { userId } = body;
+    // Process deletion
+    const { userId } = await req.json();
     if (!userId) {
       throw new Error("Missing userId in request body.");
     }
 
-    // Prevent self-deletion
     if (userId === caller.id) {
       throw new Error("Cannot delete your own account.");
     }
 
-    console.log(`Admin ${caller.id} ($${caller.email}) is deleting user ${userId}...`);
-
-    // 6. Cleanup related data
-    
-    // A. Delete from Storage (bucket: applicant-docs)
-    const { data: applicant } = await supabaseAdmin
-      .from('applicants')
-      .select('pre_employment_url, policy_rules_url')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    const filesToRemove: string[] = [];
-    
-    if (applicant?.pre_employment_url) {
-      const pathPart = applicant.pre_employment_url.split('/storage/v1/object/sign/')[1]?.split('?')[0];
-      if (pathPart) filesToRemove.push(pathPart);
-    }
-    if (applicant?.policy_rules_url) {
-      const pathPart = applicant.policy_rules_url.split('/storage/v1/object/sign/')[1]?.split('?')[0];
-      if (pathPart) filesToRemove.push(pathPart);
-    }
-
-    if (filesToRemove.length > 0) {
-      console.log(`Removing storage files: ${filesToRemove.join(', ')}`);
-      await supabaseAdmin.storage.from('applicant-docs').remove(filesToRemove);
-    }
-
-    // B. Delete from Public Tables
-    console.log("Deleting rows from public tables...");
+    // Delete from tables
     const tables = ['applicants', 'user_roles', 'profiles'];
     for (const table of tables) {
-      const { error: tblError } = await supabaseAdmin.from(table).delete().eq('user_id', userId);
-      if (tblError) console.warn(`Error deleting from ${table}:`, tblError.message);
+      await fetch(`${supabaseUrl}/rest/v1/${table}?user_id=eq.${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+          'apikey': supabaseServiceKey
+        }
+      });
     }
 
-    // 7. FINALLY: Delete user from Auth System
-    console.log(`Deleting user from auth.users: ${userId}`);
-    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-    
-    if (deleteError) {
-      throw new Error(`Auth Admin deletion failed: ${deleteError.message}`);
+    // Delete from Auth
+    const deleteResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${supabaseServiceKey}`,
+        'apikey': supabaseServiceKey
+      }
+    });
+
+    if (!deleteResponse.ok) {
+      throw new Error("Failed to delete user from auth.");
     }
 
     return new Response(JSON.stringify({ 
       success: true, 
-      message: "User and all associated data deleted successfully." 
+      message: "User deleted successfully." 
     }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -130,7 +104,7 @@ serve(async (req) => {
     const status = error.message.includes("Forbidden") ? 403 : error.message.includes("Unauthorized") ? 401 : 400;
     return new Response(JSON.stringify({ 
       error: error.message,
-      diagnostic: "This error occurs when the server rejects your admin token or cannot find your role in the database. Try refreshing or logging out and back in."
+      diagnostic: "This error usually means your login session is stale. Please try logging out and logging back in."
     }), {
       status,
       headers: { "Content-Type": "application/json", ...corsHeaders }
