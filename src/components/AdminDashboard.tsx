@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { supabaseAdmin } from '@/integrations/supabase/adminClient';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -255,13 +256,45 @@ export default function AdminDashboard() {
 
     setSaving(true);
     try {
-      // Invoke the secure admin-delete-user Edge Function
-      const { data, error: functionError } = await supabase.functions.invoke('admin-delete-user', {
-        body: { userId: selectedApplicant.user_id }
-      });
+      const targetUserId = selectedApplicant.user_id;
 
-      if (functionError) throw functionError;
-      if (data?.error) throw new Error(data.error);
+      // Delete from applicants table
+      const { error: applicantError } = await supabaseAdmin
+        .from('applicants')
+        .delete()
+        .eq('user_id', targetUserId);
+
+      if (applicantError) {
+        console.error('Error deleting applicant:', applicantError);
+      }
+
+      // Delete from profiles table
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .delete()
+        .eq('user_id', targetUserId);
+
+      if (profileError) {
+        console.error('Error deleting profile:', profileError);
+      }
+
+      // Delete from user_roles table
+      const { error: roleError } = await supabaseAdmin
+        .from('user_roles')
+        .delete()
+        .eq('user_id', targetUserId);
+
+      if (roleError) {
+        console.error('Error deleting role:', roleError);
+      }
+
+      // Delete from auth.users
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
+
+      if (authError) {
+        console.error('Error deleting auth user:', authError);
+        throw new Error(authError.message || 'Failed to delete applicant');
+      }
 
       toast.success('Applicant and all associated data deleted successfully!');
       setSelectedApplicant(null);
@@ -290,38 +323,47 @@ export default function AdminDashboard() {
       const randomPart = Array.from(array, b => b.toString(36).padStart(2, '0')).join('').slice(0, 12);
       const tempPassword = 'Welc@' + randomPart;
 
-      const { data, error: functionError } = await supabase.functions.invoke('admin-invite-user', {
-        body: { 
-          email: inviteEmail,
-          fullName: inviteName,
-          role: inviteRole,
-          password: tempPassword
-        }
+      // Create user using admin client directly
+      const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: inviteEmail,
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: { full_name: inviteName }
       });
 
-      if (functionError) {
-        console.error('Invite function error:', functionError);
-        let errorMessage = functionError.message || 'Unknown error';
-        
-        const errWithContext = functionError as any;
-        if (errWithContext.context) {
-          try {
-            const bodyText = await errWithContext.context.text();
-            console.error('Error response body:', bodyText);
-            try {
-              const body = JSON.parse(bodyText);
-              errorMessage = body.error || body.message || errorMessage;
-            } catch {
-              errorMessage = bodyText || errorMessage;
-            }
-          } catch {
-            // ignore
-          }
-        }
-        
-        throw new Error(errorMessage);
+      if (createError) {
+        console.error('Error creating user:', createError);
+        throw new Error(createError.message || 'Failed to create user');
       }
-      if (data?.error) throw new Error(data.error);
+
+      const userId = userData.user.id;
+
+      // Create profile
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .upsert({
+          user_id: userId,
+          full_name: inviteName,
+          email: inviteEmail,
+        }, { onConflict: 'user_id' });
+
+      if (profileError) {
+        console.error('Error creating profile:', profileError);
+        throw new Error(profileError.message || 'Failed to create profile');
+      }
+
+      // Create role
+      const { error: roleError } = await supabaseAdmin
+        .from('user_roles')
+        .upsert({
+          user_id: userId,
+          role: inviteRole,
+        }, { onConflict: 'user_id' });
+
+      if (roleError) {
+        console.error('Error creating role:', roleError);
+        throw new Error(roleError.message || 'Failed to create role');
+      }
 
       toast.success(`Invited ${inviteName} as ${inviteRole === 'admin' ? 'Admin' : 'HR Employee'}!`);
       setInvitePassword(tempPassword);
@@ -360,37 +402,45 @@ export default function AdminDashboard() {
     if (!confirmDelete) return;
 
     try {
-      // Invoke the secure admin-delete-user Edge Function
-      const { data, error: functionError } = await supabase.functions.invoke('admin-delete-user', {
-        body: { userId: member.user_id }
-      });
+      const targetUserId = member.user_id;
 
-      if (functionError) {
-        console.error('Function error:', functionError);
-        // Try to get more details from the error
-        let msg = functionError.message || 'Unknown error';
-        
-        // Check if there's a context with more info
-        const errWithContext = functionError as any;
-        if (errWithContext.context) {
-          try {
-            const bodyText = await errWithContext.context.text();
-            console.error('Error response body:', bodyText);
-            try {
-              const body = JSON.parse(bodyText);
-              msg = body.error || body.message || msg;
-            } catch {
-              msg = bodyText || msg;
-            }
-          } catch {
-            // ignore
-          }
-        }
-        
-        throw new Error(msg);
+      // Delete from profiles table
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .delete()
+        .eq('user_id', targetUserId);
+
+      if (profileError) {
+        console.error('Error deleting profile:', profileError);
       }
-      
-      if (data?.error) throw new Error(data.error);
+
+      // Delete from user_roles table
+      const { error: roleError } = await supabaseAdmin
+        .from('user_roles')
+        .delete()
+        .eq('user_id', targetUserId);
+
+      if (roleError) {
+        console.error('Error deleting role:', roleError);
+      }
+
+      // Delete from applicants table
+      const { error: applicantError } = await supabaseAdmin
+        .from('applicants')
+        .delete()
+        .eq('user_id', targetUserId);
+
+      if (applicantError) {
+        console.error('Error deleting applicant:', applicantError);
+      }
+
+      // Delete from auth.users
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
+
+      if (authError) {
+        console.error('Error deleting auth user:', authError);
+        throw new Error(authError.message || 'Failed to delete user');
+      }
 
       toast.success(`${member.full_name} removed successfully`);
       fetchTeamMembers();
