@@ -12,7 +12,7 @@ This document outlines the comprehensive security measures implemented in our **
 |-------|-----------|------------------|
 | **Frontend** | React App | Input Validation, Password Strength Enforcement |
 | **Backend** | Supabase | Auth, RLS, API Security |
-| **Data/Logic** | Edge Functions | Zero-Egress Admin Isolation, Service Role Auth |
+| **Data/Logic** | Supabase Admin API | Direct Admin Operations, Service Role Auth |
 | **Database** | PostgreSQL | Row Level Security, Unique Constraints, Triggers |
 | **Infrastructure** | Environment | Secret Management, Secure Config |
 
@@ -48,12 +48,10 @@ This document outlines the comprehensive security measures implemented in our **
 **Purpose:** Protects user accounts with two-factor verification  
 **Attack Prevented:** Credential stuffing, brute force, account takeover
 
-**Implementation:**
-- Email OTP (One-Time Password) sent during login
-- User must enter 6-digit code from email
-- Required for all user roles (Applicant, Employee, Admin)
+**Implementation Status:** Framework built, stubs ready  
+**Current State:** Email OTP UI components exist but not fully activated
 
-**Flow:**
+**Planned Flow:**
 ```
 1. User enters email + password
 2. System validates credentials
@@ -185,16 +183,17 @@ const validatePassword = (password: string): string => {
 };
 ```
 
-### 7. Zero-Egress Security (Edge Functions)
+### 7. Secure Admin Operations (Direct Supabase Admin API)
 
-**Purpose:** Isolate sensitive administrative actions from the client  
+**Purpose:** Isolate sensitive administrative actions from the client using service role key  
 **Attack Prevented:** Auth Admin API abuse, client-side credential leaking, bypass of business logic  
 
 **Implementation:**
-- Sensitive operations (Invite User, Delete User) are moved to **Supabase Edge Functions**.
-- Functions use the `SUPABASE_SERVICE_ROLE_KEY` internally (never exposed to client).
-- Frontend calls functions using a standard JWT; the function then verifies the user's 'admin' role before proceeding.
-- Result: The user's browser never directly interacts with the core Auth Admin API.
+- Sensitive operations (Invite User, Delete User) use **Supabase Admin API** directly via service role key
+- The service role key is stored securely in Vercel environment variables (`VITE_SUPABASE_SERVICE_ROLE_KEY`)
+- Frontend uses a dedicated admin client (`adminClient.ts`) that never exposes the service role key in public repos
+- Admin operations are restricted to authenticated admin users via role checks before API calls
+- Result: The user's browser never directly interacts with the core Auth Admin API, and operations are performed server-side via Supabase
 
 ### 8. Database Integrity
 
@@ -210,12 +209,13 @@ const validatePassword = (password: string): string => {
 
 | # | Feature | Attack Prevented | Implementation |
 |---|---------|-----------------|----------------|
-| 1 | MFA (Email OTP) | Account takeover, brute force | Supabase Edge Functions |
+| 1 | MFA Framework | Account takeover, brute force | Supabase Auth (stubs ready) |
 | 2 | Password Policy | Weak passwords | Frontend validation |
 | 3 | Row Level Security | Unauthorized access | PostgreSQL RLS |
 | 4 | Role-Based Access | Privilege escalation | React + Supabase RBAC |
 | 5 | Session Management | Session hijacking | Supabase Auth |
 | 6 | Input Validation | Injection attacks | React + Database constraints |
+| 7 | Secure Admin Ops | Auth Admin API abuse | Direct Supabase Admin API |
 
 ---
 

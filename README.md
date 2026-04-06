@@ -14,13 +14,12 @@ Sagility is an employee management platform designed to streamline HR operations
 
 ### Key Features
 
-- 🔐 **Secure Authentication** - Multi-factor authentication (MFA) with Email OTP, password strength enforcement
+- 🔐 **Secure Authentication** - Password strength enforcement, MFA framework ready
 - 👥 **Role-Based Access** - Admin, Employee, and Applicant roles with different permissions
 - 📄 **Document Management** - PDF upload and submission workflow
 - 🌙 **Dark Mode Support** - Full dark mode toggle
 - 📱 **Responsive Design** - Works on desktop and mobile devices
-- ⚡ **Edge Computing** - Secure server-side logic via Supabase Edge Functions (Admin tasks)
-- 🔒 **Zero-Egress Security** - Administrative actions (invite/delete) are fully isolated on the server
+- 🔒 **Secure Admin Operations** - Direct Supabase Admin API for invite/delete users
 
 ---
 
@@ -81,7 +80,7 @@ The authentication system was built from scratch with manual implementation of:
 - ✅ **Password Visibility Toggle** - Eye icons for showing/hiding passwords
 - ✅ **Automatic Field Clearing** - Fields reset when switching between forms
 - ✅ **Password Strength Validation** - Enforces strong passwords (8+ chars, uppercase, lowercase, numbers, special characters)
-- ✅ **Multi-Factor Authentication** - Email OTP-based MFA for enhanced security
+- ✅ **Multi-Factor Authentication** - Framework built (stubs ready)
 - ✅ **Role-Based Redirect** - Different dashboards based on user role
 
 **Code Example - Password Toggle Implementation:**
@@ -251,9 +250,15 @@ This project implements industry-standard security practices:
 ### Authentication Security
 
 - **Password Hashing** - Supabase handles secure password hashing
-- **MFA Support** - TOTP-based two-factor authentication
+- **MFA Framework** - UI stubs built, ready for activation
 - **Session Management** - Secure session handling
 - **Password Policies** - Strength requirements enforced
+
+### Admin Operations
+
+- **Invite User** - Direct Supabase Admin API with service role key
+- **Delete User** - Direct Supabase Admin API with service role key
+- **Environment Security** - Service role key stored in Vercel env vars
 
 ### Database Security
 

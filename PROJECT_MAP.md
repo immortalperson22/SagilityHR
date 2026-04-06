@@ -45,7 +45,7 @@ Sagility HR Portal is a comprehensive web-based platform that enables:
 | Feature | Description | Priority |
 |---------|-------------|----------|
 | User Authentication | Secure login/registration with email verification | Required |
-| Multi-Factor Authentication (MFA) | TOTP-based two-factor authentication | Required |
+| Multi-Factor Authentication (MFA) | TOTP-based two-factor authentication | Framework built (stubs) |
 | Role-Based Access Control | Three-tier access system (Admin/HR/Applicant) | Required |
 | Document Upload | PDF file upload with validation | Required |
 | Application Status Tracking | Real-time status updates | Required |
@@ -174,7 +174,7 @@ SagilityHR/
 | MFA Support | TOTP authenticator apps |
 | Session Management | JWT tokens |
 | Authorization | Role-based access control (RBAC) |
-| Admin Isolation | Zero-Egress Edge Functions |
+| Admin Isolation | Direct Supabase Admin API (service role key) |
 | Data Protection | Row Level Security (RLS) + UNIQUE Constraints |
 | Input Validation | Client + Server side |
 | XSS Prevention | React escaping + CSP |

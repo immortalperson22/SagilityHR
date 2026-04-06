@@ -194,7 +194,7 @@ The system implements comprehensive RLS policies:
    - Secure hashing via Supabase Auth
 
 2. **Multi-Factor Authentication (MFA)**
-   - TOTP-based authenticator support
+   - Framework built with UI components (stubs ready)
    - Optional for all user roles
 
 3. **Role-Based Access Control (RBAC)**
@@ -236,14 +236,16 @@ The system implements comprehensive RLS policies:
 | /applicants/:id | PATCH | Update status | Admin |
 | /user_roles | GET | Get user roles | Authenticated |
 
-### 5.2 Edge Functions
+### 5.2 Admin Operations
 
-| Function | Trigger | Purpose |
-|----------|---------|---------|
-| send-approval-email | Frontend Call | Send professional onboarding email |
-| admin-invite-user | Frontend Call | Securely create user/profile/role |
-| admin-delete-user | Frontend Call | Wipe user data and auth account |
-| delete-old-records | Scheduled (Cron) | Auto-delete after 45 days |
+| Operation | Method | Purpose |
+|-----------|--------|---------|
+| Invite User | Supabase Admin API | Create user with temp password, assign role |
+| Delete User | Supabase Admin API | Remove user from auth, profiles, roles, applicants |
+| send-approval-email | Edge Function | Send professional onboarding email |
+| delete-old-records | Edge Function (Cron) | Auto-delete after 45 days |
+
+**Note:** Admin invite and delete operations were migrated from Edge Functions to direct Supabase Admin API calls to reduce egress and eliminate JWT verification issues. The service role key is securely stored in Vercel environment variables.
 
 ---
 
