@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Key, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Key, Loader2, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function ResetPassword() {
@@ -10,10 +10,33 @@ export default function ResetPassword() {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   // Clear resetting flag when component mounts
   useEffect(() => {
     localStorage.removeItem('resettingPassword');
+  }, []);
+
+  useEffect(() => {
+    const initSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setSessionReady(true);
+      }
+      setSessionChecked(true);
+    };
+    initSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY') {
+        setSessionReady(true);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -62,6 +85,36 @@ export default function ResetPassword() {
       }, 1500);
     }
   };
+
+  if (!sessionChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
+      </div>
+    );
+  }
+
+  if (!sessionReady && sessionChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
+        <div className="w-full max-w-md p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 text-center">
+          <AlertCircle className="w-16 h-16 mx-auto text-red-500 mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            Invalid Reset Link
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            This password reset link is invalid or has expired. Please request a new one.
+          </p>
+          <a
+            href="/forgot-password"
+            className="inline-block w-full py-3 px-4 bg-[#00CEC8] hover:bg-[#00CEC8]/90 text-white font-medium rounded-lg text-center"
+          >
+            Request New Reset Link
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   if (success) {
     return (
