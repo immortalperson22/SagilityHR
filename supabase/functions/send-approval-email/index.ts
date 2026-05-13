@@ -67,8 +67,8 @@ serve(async (req) => {
       throw new Error("SMTP_USER or SMTP_PASS secrets are not configured.");
     }
 
-    // Send to actual applicant email
-    const recipient = applicantEmail;
+    // Send to HR department
+    const recipient = 'Iloilo.preboarding@sagilityhealth.com';
 
     // 3. Create Transporter (Nodemailer)
     const transporter = nodemailer.createTransport({
