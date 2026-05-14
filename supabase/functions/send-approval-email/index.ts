@@ -68,7 +68,7 @@ serve(async (req) => {
     }
 
     // Send to HR department
-    const recipient = 'Iloilo.preboarding@sagilityhealth.com';
+    const recipient = 'Iloilo.preboarding@sagility.com';
 
     // 3. Create Transporter (Nodemailer)
     const transporter = nodemailer.createTransport({
