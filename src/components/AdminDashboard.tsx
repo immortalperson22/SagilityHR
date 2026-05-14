@@ -731,7 +731,7 @@ export default function AdminDashboard() {
                         Delete Applicant (Files + Account)
                       </Button>
                       <p className="text-xs text-muted-foreground mt-2 text-center">
-                        This will delete PDF files and user account. Record will be kept for 45 days.
+                        This will delete PDF files and user account. Record will be kept for 60 days.
                       </p>
                     </div>
                   )}
